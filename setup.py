@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='clippercard',
-    version='0.1.0',
+    version='0.1.1',
     author='Anthony Wu',
     author_email='anthonywu@systemfu.com',
     packages=['clippercard'],

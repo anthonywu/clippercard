@@ -1,1 +1,2 @@
 v0.1.0, 2012-12-01 initial release - gets cardholder details and card balances
+v0.1.1, 2012-12-01 doc fix - include css file in manifest
