@@ -4,6 +4,9 @@ Clipper Card API
 
 This module provides an interface to check Clipper Card account information and get card balances.
 
+Hello World example:
+
+    from clippercard.clippercard import *
     session = ClipperCardWebSession()
     auth = {'username': 'your-username', 'password': 'your-password'}
     login_resp = session.login(**auth)
