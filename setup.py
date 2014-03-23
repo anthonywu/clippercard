@@ -6,6 +6,12 @@ setup(
     author='Anthony Wu',
     author_email='anthonywu@systemfu.com',
     packages=['clippercard'],
+    package_dir = {'clippercard':'clippercard'},
+    entry_points = {
+        'console_scripts': [
+            'clippercard = clippercard.main:main',
+        ]
+    },
     scripts=[],
     url='https://github.com/anthonywu/clippercard',
     license='LICENSE.txt',
