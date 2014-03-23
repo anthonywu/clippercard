@@ -1,5 +1,7 @@
+*.pyc
 *~
 .DS_Store
 MANIFEST
 build/*
 dist/*
+*.egg-info/*
