@@ -1,4 +1,4 @@
-Unofficial Clipper Card API
+.. image:: ./logo.png
 ===========================
 
 .. image:: https://badge.fury.io/py/clippercard.png
@@ -6,8 +6,11 @@ Unofficial Clipper Card API
 
 .. image:: https://pypip.in/d/clippercard/badge.png
         :target: https://crate.io/packages/clippercard/
+        
+.. image:: https://pypip.in/license/vxapi/badge.png
+        :target: ./LICENSE.txt
 
-clippercard is an unofficial web API to clippercard.com, written in Python
+``clippercard`` is an unofficial web API to clippercard.com, written in Python.
 
 Not only is the `clippercard web site <https://www.clippercard.com>`_ a total UX/UI disaster, its behind-the-scene's HTML structure and HTTP protocol is a complete exercise in palmface. This library aims to provide an unofficial but sensible interface to the official web service.
 
