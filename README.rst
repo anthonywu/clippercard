@@ -44,7 +44,8 @@ Usage
         print(c)
 
 
-.. code-block: bash
+You also get a super convenient command line binary ``clippercard``::
+
 
     $ clippercard -h # see usage information
 
