@@ -86,4 +86,9 @@ The ``wife`` credentials can then be accessed via::
 Contribute
 ----------
 
-#. Fork the repo, make your changes, add adequate tests, and send me a pull request.
+#. fork the repo
+#. make your changes
+#. follow local style consistency, then PEP8
+#. run pyflakes/frosted on your diffs
+#. add unit tests, make sure they pass =)
+#. send me a pull request w/ explanation of design decisions
