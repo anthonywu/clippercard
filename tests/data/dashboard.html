@@ -1,0 +1,1037 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><script id="f5_cspm">(function(){var f5_cspm={f5_p:'EBABBBCEKAAABAAECAAAAAJAABAAAAAAEABAFBAAEIPDAAAADAAAAPAAKLCFAAAA',setCharAt:function(str,index,chr){if(index>str.length-1)return str;return str.substr(0,index)+chr+str.substr(index+1);},get_byte:function(str,i){var s=(i/16)|0;i=(i&15);s=s*32;return((str.charCodeAt(i+16+s)-65)<<4)|(str.charCodeAt(i+s)-65);},set_byte:function(str,i,b){var s=(i/16)|0;i=(i&15);s=s*32;str=f5_cspm.setCharAt(str,(i+16+s),String.fromCharCode((b>>4)+65));str=f5_cspm.setCharAt(str,(i+s),String.fromCharCode((b&15)+65));return str;},set_latency:function(str,latency){latency=latency&0xffff;str=f5_cspm.set_byte(str,20,(latency>>8));str=f5_cspm.set_byte(str,21,(latency&0xff));str=f5_cspm.set_byte(str,18,2);return str;},wait_perf_data:function(){try{var wp=window.performance.timing;if(wp.loadEventEnd>0){var res=wp.loadEventEnd-wp.navigationStart;if(res<60001){var cookie_val=f5_cspm.set_latency(f5_cspm.f5_p,res);window.document.cookie='aaaaaaaaaaaaaaa='+encodeURIComponent(cookie_val)+';path=/';}
+return;}}
+catch(err){return;}
+setTimeout(f5_cspm.wait_perf_data,100);return;},go:function(){var chunk=window.document.cookie.split(/\s*;\s*/);for(var i=0;i<chunk.length;++i){var pair=chunk[i].split(/\s*=\s*/);if(pair[0]=='f5_cspm'){if(pair[1]=='1234'){var d=new Date();d.setTime(d.getTime()-1);window.document.cookie='f5_cspm=;expires='+d.toUTCString()+';path=/;';setTimeout(f5_cspm.wait_perf_data,100);}}}}}
+f5_cspm.go();}());</script>
+	<title>
+	    		My Clipper
+	    	</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+	<style type="text/css">
+.clearfix:after {
+	content: ".";
+	display: block;
+	height: 0; 
+	clear: both;
+	visibility: hidden;
+}
+</style><script type="text/javascript" src="/ClipperCard/javax.faces.resource/jquery-1.4.4.min.js.jsf?ln=js"></script><script type="text/javascript" src="/ClipperCard/javax.faces.resource/swfobject.js.jsf?ln=js"></script><script type="text/javascript" src="/ClipperCard/javax.faces.resource/CSJSRequestObject.js.jsf?ln=js"></script><script type="text/javascript" src="/ClipperCard/javax.faces.resource/switchcontent.js.jsf?ln=js"></script><script type="text/javascript" src="/ClipperCard/javax.faces.resource/switchicon.js.jsf?ln=js"></script><script type="text/javascript" src="/ClipperCard/javax.faces.resource/tabcontent.js.jsf?ln=js"></script><script type="text/javascript" src="/ClipperCard/javax.faces.resource/helpBox.js.jsf?ln=js"></script><script type="text/javascript" src="/ClipperCard/javax.faces.resource/validation.js.jsf?ln=js"></script><script type="text/javascript" src="/ClipperCard/javax.faces.resource/checkOut.js.jsf?ln=js"></script>
+
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+	<script type="text/javascript" charset="utf-8">
+			api_gallery=['test1.php?iframe=true&width=600&height=300'];
+			api_titles=['',];
+			api_descriptions=[''];
+		</script>
+	<script language="JavaScript">
+			function transitSwitch(divToShow) {
+				$('div.transitContent').hide();
+				$('#' + divToShow).show(); 
+			}
+
+			function menuChange() {
+				this.style.backgroundColor = "blue"; 
+			}
+
+			$(function(){
+				//break out of frames, if in a frame
+				if (top.location!= self.location) {
+					top.location = self.location.href
+				}
+
+				if(typeof jsf !== 'undefined'){
+					jsf.ajax.addOnEvent(function(data) {
+				        var ajaxstatus = data.status; // Can be "begin", "complete" and "success"
+				        var ajaxloader = document.getElementById("loadingIcon");
+		
+				        switch (ajaxstatus) {
+				            case "begin": // This is called right before ajax request is been sent.
+				                ajaxloader.style.display = 'block';
+				                break;
+		
+				            case "complete": // This is called right after ajax response is received.
+				                ajaxloader.style.display = 'none';
+				                break;
+		
+				            case "success": // This is called when ajax response is successfully processed.
+				                // NOOP.
+				                break;
+				        }
+				    });
+				}
+				transitSwitch('transitContent1');
+			});
+		</script><link type="text/css" rel="stylesheet" href="/ClipperCard/javax.faces.resource/prettyPhoto.css.jsf?ln=css" /><link type="text/css" rel="stylesheet" href="/ClipperCard/javax.faces.resource/thickbox.css.jsf?ln=css" /><link type="text/css" rel="stylesheet" href="/ClipperCard/javax.faces.resource/print2011.css.jsf?ln=css" /><link type="text/css" rel="stylesheet" href="/ClipperCard/javax.faces.resource/redesign2010.css.jsf?ln=css" /><link type="text/css" rel="stylesheet" href="/ClipperCard/javax.faces.resource/components.css.jsf?ln=css" /><link type="text/css" rel="stylesheet" href="/ClipperCard/javax.faces.resource/components2011.css.jsf?ln=css" /><link type="text/css" rel="stylesheet" href="/ClipperCard/javax.faces.resource/screen.css.jsf?ln=css" /><link type="text/css" rel="stylesheet" href="/ClipperCard/javax.faces.resource/screen2011.css.jsf?ln=css" /><link type="text/css" rel="stylesheet" href="/ClipperCard/javax.faces.resource/jquery-ui-1.8.18.custom.css.jsf?ln=css" /><script type="text/javascript" src="/ClipperCard/javax.faces.resource/jsf.js.jsf?ln=javax.faces"></script></head>
+
+<body id="myClipperPage" class="myClipper orderCard">
+<form id="mainForm" name="mainForm" method="post" action="/ClipperCard/dashboard.jsf" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="mainForm" value="mainForm" />
+
+		<div id="container">
+			<div id="wrapper">
+				<div id="header">
+	<script type="text/javascript">
+		$(function(){
+			$("#btnSearch").click(function(){
+				window.location.href = "/ClipperWeb/search.do?searchString=" + $("#searchText").val();
+			});
+		})
+	</script>
+	<div class="header"></div>
+
+
+	<div id="header">
+		<div id="skipto">
+			<a href="#mainContent" class="skip_nav" accesskey="z">Skip to
+				Content</a>
+		</div>
+		<div id="headerSearch">
+			<label id="searchString" for="searchText">Search</label> <input id="searchText" /> <input value="Go" id="btnSearch" class="buttonSearch" style="padding-left: 12px;" /><br />
+			<div style="color: red; font-size: .75em; text-align: right; padding-right: 30px;">
+			</div>
+		</div>
+			<div id="logOffBox">
+				Hello,
+				ANTHONY
+				<a href="../ClipperCard/logout.jsf">Log Out</a>
+			</div>
+		<h1>
+			<a href="/ClipperWeb/index.do">Clipper</a>
+		</h1>
+		<ul id="topNav">
+			<li id="home"><a href="../ClipperWeb/index.do" accesskey="2" title="Home">Home</a></li>
+			<li id="about"><a href="../ClipperWeb/whatsTranslink.do" accesskey="2" title="About Clipper page">About Clipper</a></li>
+			<li id="use"><a href="../ClipperWeb/useTranslink.do" accesskey="3" title="How to use Clipper page">Use Clipper</a></li>
+			<li id="get"><a href="../ClipperWeb/getTranslink.do" accesskey="4" title="How to get Clipper page">Get Clipper</a></li>
+		</ul>
+
+
+		<script type="text/javascript">
+
+		$(document).ready(function() {
+		
+		 // toggles the slickbox on clicking the noted link
+		  $('#myclipperModuleRollover').click(function(){
+			  	$("#myBox").slideToggle(150);
+			  	$("#myBox input.login").val("");
+			})
+			
+			$("#myclipperLoggedIn").click(function(){
+				$("#myLoggedInBox").slideToggle(150);
+			});
+
+			//show the correct login/myClipper div
+			if("true" == "true"){
+				$("#myRollover1").hide();
+				$("#myRollover2").show();
+			}
+			else{
+				$("#myRollover1").show();
+				$("#myRollover2").hide();
+			}
+			if(false)
+				$("#myBox").show();
+			
+			$("input.login").live("keydown",function(e){
+				if(e.keyCode==13){
+					e.preventDefault();
+					$("#mainForm\\:submitLogin").click();
+				}
+			});
+		  
+		});
+		
+		</script><div id="mainForm:loginView">
+
+			<div id="myRollover1">
+
+				<h1 id="myclipperModuleRollover">Toggle the box</h1>
+
+				<div id="myBox" style="display: none;">
+					<div class="myclipperModuleBody">
+						<div style="text-align: left; font-weight: bold; padding-top: 5px;">
+							<p>Secure Login</p>
+						</div>
+						<div style="text-align: left;">
+							<label>Email Address:</label>
+						</div><input id="mainForm:username" type="text" name="mainForm:username" value="anthonywu@gmail.com" class="login" />
+						<div style="text-align: left;">
+							<label>Password:</label>
+						</div><input id="mainForm:password" type="password" name="mainForm:password" value="" class="login" />
+						<p class="formSmall">
+							<a href="forgottenPassword.jsf" style="color: white;" title="Forgot your password?">Forgot your password?</a>
+						</p><span id="mainForm:renderError"></span><input id="mainForm:submitLogin" type="submit" name="mainForm:submitLogin" value="Login" class="buttonLogin" onclick="mojarra.ab(this,event,'action','mainForm:username mainForm:password','mainForm:renderError');return false" />
+					</div>
+					<!-- END MY CLIPPER MODULE -->
+					<div class="myclipperModuleBodyBottom"></div>
+				</div>
+			</div>
+			<div id="myRollover2" style="display: none">
+
+				<h1 id="myclipperLoggedIn">Toggle the box</h1>
+
+				<div id="myLoggedInBox" style="display: none;">
+					<div class="myclipperModuleBody">
+						<ul>
+							<li><a href="dashboard.jsf">Manage account</a></li>
+							<li><a href="dashboard.jsf">Check my balance</a></li>
+							<li><a href="#" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt43':'mainForm:j_idt43'},'');return false">Add valued</a></li>
+							<li><a href="#" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt45':'mainForm:j_idt45'},'');return false">Replace my card</a></li>
+							<li><a href="/ClipperWeb/damagedCard.do">Support</a></li>
+							<li><a href="logout.jsf">Log Out</a></li>
+						</ul>
+					</div>
+					<!-- END MY CLIPPER MODULE -->
+					<div class="myclipperModuleBodyBottom"></div>
+				</div>
+
+
+			</div></div>
+	</div>
+
+	<!-- /end #header -->
+				</div>
+				<div id="leftNav">
+
+	<script type="text/javascript">
+	$(function(){
+		//get the request url, find the a with the href = request url and apply style navSelected to parent li
+		//remove navSelected from any other li values that have it	
+		var url = window.location.href;
+		var endIdx = url.indexOf("?",0);
+		var page = url.substring(url.lastIndexOf("/")+1,endIdx==-1?url.length:endIdx);
+		endIdx = document.referrer.indexOf("?",0);
+		var source =  document.referrer.substring(document.referrer.lastIndexOf("/")+1,endIdx==-1?document.referrer.length:endIdx);
+		//Exception cases 
+		if(page == "cardHistory.jsf")
+			page = "dashboard.jsf";
+		else if(page == "checkout.jsf" && source == "order.jsf")
+			page = "order.jsf";
+		else if(page == "checkout.jsf" && source == "manage.jsf")
+			page = "manage.jsf"
+		else if(page == "passwordChangeSuccessful.jsf")
+			page = "changePassword.jsf"	
+		else if(page == "lostStoleConfirmation.jsf")
+			page = "lostCard.jsf";
+		
+		//end exception cases
+		
+		$("#leftNavModule li").removeClass("navSelected");
+		$("#leftNavModule li[name=" + page + "]").addClass("navSelected").parent().addClass("navSelected");
+		
+		if("true" == "true")
+			$("#logOff").show();
+		else
+			$("#logOff").hide();
+	});
+	</script>
+	
+	<div id="leftNav">
+		<ul id="leftNavModule">
+				<li id="myAccount" class="navSelected" name="dashboard.jsf"><a href="dashboard.jsf" title="My Account">My Account</a></li>
+			<li id="orderCard" name="order.jsf"><a href="#" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt52':'mainForm:j_idt52'},'');return false">Order New Card</a></li>
+			<li id="addValue" name="manage.jsf"><a href="#" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt54':'mainForm:j_idt54'},'');return false">Add Value to Card</a></li>
+			<li id="registerCard" name="register.jsf"><a href="#" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt56':'mainForm:j_idt56'},'');return false">Register a Card</a></li>
+				<li id="editProfile" name="editProfile.jsf"><a href="editProfile.jsf" title="Edit Profile Information">Profile Information</a></li>
+						<li id="editPayment" name="editPayment.jsf"><a href="#" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt60':'mainForm:j_idt60'},'');return false">Payment Information</a></li>		
+				
+				<li id="lostCard" name="lostCard.jsf"><a href="lostCard.jsf" title="Report Lost, Stolen or Damaged Card">Report Lost, Stolen or Damaged Card</a></li>
+				<li id="unregisterCard" name="unregister.jsf"><a href="#" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt63':'mainForm:j_idt63'},'');return false">Unregister Card</a></li>
+				<li id="changePassword" name="changePassword.jsf"><a href="changePassword.jsf" title="Change Password">Change Password</a></li>
+			<li id="customerSupport" name="customerSupport.jsf"><a href="../ClipperWeb/damagedCard.do" title="Customer Support">Customer Support</a></li>
+				<li id="logOff" style="display:none;"><a href="#" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt67':'mainForm:j_idt67'},'');return false">Log Out</a></li>
+		</ul>
+		<ul id="leftNavModuleEnd">
+			<li> </li>
+		</ul>
+	</div>
+				</div>
+				<div id="mainContent"><input type="hidden" name="mainForm:j_idt71" value="0" />
+			<script type="text/javascript">
+					var curDisableLnk = null;
+ 					var curSerial = null;
+					$(function(){
+						
+						$("div.toggleCardInfo").live("click",function(){
+							if($(this).html() == "-"){
+								$(this).parent().next().hide();
+								$(this).html("+")
+							}
+							else{
+								$(this).parent().next().show();
+								$(this).html("-")
+							}
+							setExpandCollapseVis();
+						});
+
+						$(".changeNameLink").click(function(){
+							var name = $(this).parent().prev().children().first().html();
+							$(this).parent().prev().find('.editName').children().first().val(name);
+							$(this).parent().parent().find(".displayName").hide();
+							$(this).parent().parent().find(".editName").show();
+							$(this).parent().parent().find(".editName").children().eq(0).focus();
+						});
+
+						$(".cancelEdit").click(function(){
+							$(this).parent().parent().parent().find(".displayName").show();
+							$(this).parent().parent().parent().find(".editName").hide();
+						});
+
+						$(".saveEdit").click(function(){
+							var name = $(this).parent().parent().prev().prev().find('.editName').children().first().val();
+							$(this).parent().parent().prev().prev().children().first().html(name);
+							$(this).parent().parent().parent().find(".displayName").show();
+							$(this).parent().parent().parent().find(".editName").hide();
+						});
+
+						$("#dialogGetSecurityQuestion").dialog({
+							autoOpen:false,
+							resizable:false,
+							modal:true,
+							width:450,
+							buttons:{
+								"Save":function(){
+									$("input.securityAnswer").focus();
+									$("input.securityAnswer").blur();
+
+									var errs = $("#dialogGetSecurityQuestion div.boxX").length;
+									if(errs == 0){
+										$("#securityData input.securityAnswer").val($("#txtSecAnswer").val());
+										$("#securityData input.securityQuestion").val($("select.ddlQuestion option:selected").text())										
+										$(this).dialog("close");
+										$("#saveBtn").find("input").click();
+									}
+								}
+							}
+						});
+
+						$("#dialogConfirmDisableAutoload").dialog({
+							autoOpen:false,
+							resizable:false,
+							modal:true,
+							width:250,
+							buttons:{
+								"Yes": function()
+								{
+									$("#" + curDisableLnk).next().click();
+									$("#" + curDisableLnk).next().remove();
+									$("#" + curDisableLnk).remove();
+									$(this).dialog("close")
+								},
+								"No": function()
+								{
+									$(this).dialog("close")
+								}
+							},
+							beforeClose: function(){
+								curDisableLnk = null;
+							}
+						});
+						
+
+						
+						if(false){
+							$("#dialogGetSecurityQuestion").dialog("open");
+						}
+
+						$("span.disableAutoloadSpan").click(function(){
+							curDisableLnk = $(this).attr("id");
+							$("#dialogConfirmDisableAutoload").dialog("open");
+						});
+
+						$("#dialogNoHistory").dialog({
+							autoOpen:false,
+							resizable:false,
+							modal:true,
+							width:450,
+							buttons:{
+								"Ok": function()
+								{
+									$(this).dialog("close");
+								}
+							}
+						});
+						
+						$("#changeAutoloadAmt").live("click",function(){
+							$("#newEcashAmt").val("");
+							$("#dialogChangeAutoloadAmt").dialog("open");
+						})
+						
+						$("#changeAutoloadParkingPurseAmt").live("click",function(){
+							$("#newParkingPurseAmt").val("");
+							$("#dialogChangeAutoloadParkingPurseAmt").dialog("open");
+						})
+
+								
+						
+						$('#dialogChangeAutoloadAmt').keyup(function(e) {
+						    if (e.keyCode == 13) {
+						    	SubmitEcashChangeAmt();
+						    }
+						});
+						
+						$('#dialogChangeAutoloadParkingPurseAmt').keyup(function(e) {
+						    if (e.keyCode == 13) {
+						    	//alert("eneterd amount");
+						    	SubmitParkingPurseChangeAmt();
+						    }
+						});
+						
+						$("#dialogChangeAutoloadAmt").dialog({
+							autoOpen:false,
+							width:450,
+							modal:true,
+							resizable:false,
+							buttons: 
+							{
+								"Save":function(){
+									SubmitEcashChangeAmt();
+								},
+								"Cancel":function(){
+									$(this).dialog("close");
+								}
+							}
+						})
+						
+						$("#dialogChangeAutoloadParkingPurseAmt").dialog({
+							autoOpen:false,
+							width:450,
+							modal:true,
+							resizable:false,
+							buttons: 
+							{
+								"Save":function(){
+									SubmitParkingPurseChangeAmt();
+								},
+								"Cancel":function(){
+									$(this).dialog("close");
+								}
+							}
+						})
+							
+					});
+
+					function seeHistory(){
+						var nowHrs = new Date().getHours();
+						if(nowHrs >= 1  && nowHrs < 3){
+							$("#dialogNoHistory").dialog("open");
+							return false;
+						}
+						else
+							return true;
+					}
+
+					function expandCards(){
+						$('div.cardData').show(); 
+						$('div.toggleCardInfo').html('-');
+						setExpandCollapseVis();
+					}
+					function collapseCards(){
+						$('div.cardData').hide(); 
+						$('div.toggleCardInfo').html('+');
+						setExpandCollapseVis();
+					}
+					function setExpandCollapseVis(){
+						if($("div.cardData:visible").length == $("div.cardData").length){
+							$("#collapseLink").show();
+							$("#expandLink").hide();
+						}
+						else{
+							$("#collapseLink").hide();
+							$("#expandLink").show();
+						}
+					}
+					
+					function setPaymentExpandCollapseVis(){
+						if($("div.paymentData:visible").length == $("div.paymentData").length){
+							$("#collapsePaymentLink").show();
+							$("#expandPaymentLink").hide();
+						}
+						else{
+							$("#collapsePaymentLink").hide();
+							$("#expandPaymentLink").show();
+						}
+					}
+					
+					function expandPayment(){
+						$('div.paymentData').show();						
+						setPaymentExpandCollapseVis();
+					}
+					function collapsePayment(){
+						$('div.paymentData').hide();						
+						setPaymentExpandCollapseVis();
+					}
+					
+					function setProfileExpandCollapseVis(){
+						if($("div.profileData:visible").length == $("div.profileData").length){
+							$("#collapseProfileLink").show();
+							$("#expandProfileLink").hide();
+						}
+						else{
+							$("#collapseProfileLink").hide();
+							$("#expandProfileLink").show();
+						}
+					}
+					
+					function expandProfile(){
+						$('div.profileData').show();						
+						setProfileExpandCollapseVis();
+					}
+					function collapseProfile(){
+						$('div.profileData').hide();						
+						setProfileExpandCollapseVis();
+					}
+					
+					
+				
+				function SubmitEcashChangeAmt(){
+					$("#dialogChangeAutoloadAmt").dialog("close");
+					$("#mainForm\\:newEcashAmtVal").val($("#newEcashAmt").val())
+					$("#mainForm\\:changeAutoloadCash").click();
+				}
+				function SubmitParkingPurseChangeAmt(){
+					$("#dialogChangeAutoloadParkingPurseAmt").dialog("close");
+					$("#mainForm\\:newParkingPurseAmtVal").val($("#newParkingPurseAmt").val())
+					$("#mainForm\\:changeAutoloadParkingPurse").click();
+					//alert("in the subitparkingpurche amount function");
+				}
+				
+					
+					
+					
+		    	</script>
+		    	<style type="text/css">
+		    		.ui-dialog .ui-dialog-buttonpane button {
+		    			font-size:.9em !important;
+		    		}
+		    	</style>
+
+
+			<div id="mainContent">
+				<div class="prop500"></div>
+				<div class="contentSubHeader">
+					<p>My Account</p>
+				</div>
+				<!--MESSAGES-->
+				<div class="stepHeader" style="display: none;">
+					<div class="title">
+						<p>Important Messages</p>
+					</div>
+				</div>
+				<!--BOX 1-->
+				<div class="greyBox" style="display: none;">
+					<p class="errorText">In this box, Clipper would send messages
+						about credit cards that are about to expire, failed Autoload
+						payments, offer customers the ability to set up a secondary
+						payment method if they don't have one set up, etc.</p>
+				</div>
+				<div class="spacer"></div>
+				<!--END MESSAGES-->
+				<!-- introduction started -->
+				<div id="overviewcontent1">
+					<p>Welcome! My Clipper is a secure place to add value to your
+						card, set up Autoload, manage your account information, and more.</p>
+				</div>
+				<!-- introduction finished -->
+				<!--PROFILE INFORMATION-->
+				<div class="stepHeader">
+					<div class="title">
+						<p>My Profile Information</p>
+					</div>					
+					<div class="policy">
+							<p>
+								<span id="collapseProfileLink" style="cursor: pointer; text-decoration: underline; font-size: .75em; color: white;" onclick="collapseProfile();">Collapse
+								</span> 
+								<span id="expandProfileLink" style="cursor: pointer; display: none; text-decoration: underline; font-size: .75em; color: white;" onclick="expandProfile();">Expand
+								</span>
+							</p>
+						</div>
+					<!--&lt;div style=&quot;float: right;&quot; class=&quot;helpToggle helpToggleInactive&quot;
+						onclick=&quot;showHelp('helpContainerOne', this);&quot;&gt;&lt;/div&gt;-->
+				</div>
+				<!--BOX 1-->
+				<div class="greyBox  profileData">
+					<div class="infoDiv">
+						<div class="fieldName">Name on Account:</div>
+						<div class="fieldData"> John Smith</div>
+					</div>
+
+					<div class="spacer"></div>
+
+					<div class="infoDiv">
+						<div class="fieldName">Email:</div>
+						<div class="fieldData">jsmith@example.org</div>
+					</div>
+
+					<div class="spacer"></div>
+
+					<div class="infoDiv">
+						<div class="fieldName">Address:</div>
+						<div class="fieldData">1 Main St</div>
+					</div>
+
+					<div class="infoDiv">
+						<div class="fieldName"></div>
+						<div class="fieldData">SAN FRANCISCO,
+							CA</div>
+					</div>
+
+					<div class="infoDiv">
+						<div class="fieldName"></div>
+						<div class="fieldData">94103</div>
+					</div>
+
+					<div class="spacer"></div>
+
+					<div class="infoDiv">
+						<div class="fieldName">Phone:</div>
+						<div class="fieldData">415-555-5555</div>
+					</div>
+
+					<div class="spacer"></div>
+
+					<div class="infoDiv">
+						<div class="fieldName"></div>
+						<div class="fieldData">
+							<a href="editProfile.jsf?faces-redirect=true">Edit My Profile Information</a>
+						</div>
+					</div>
+				</div>
+				<div class="spacer"></div>
+				<!--END PROFILE INFORMATION--><span id="mainForm:paymentInfoOnFile">
+				<!-- &lt;c:if test=&quot;true&quot;&gt; -->
+					<!--payment INFORMATION-->
+					<div class="stepHeader">
+						<div class="title">
+							<p>My Payment Information</p>
+						</div>
+						<div class="policy">
+							<p>
+								<span id="collapsePaymentLink" style="cursor: pointer; text-decoration: underline; font-size: .75em; color: white;" onclick="collapsePayment();">Collapse
+								</span> 
+								<span id="expandPaymentLink" style="cursor: pointer; display: none; text-decoration: underline; font-size: .75em; color: white;" onclick="expandPayment();">Expand
+								</span>
+							</p>
+						</div>
+					</div>
+						<span style="align:justify;color: red; font-size: .65em;">										
+						</span> 
+					<!--BOX 1-->								
+					
+					<div class="greyBox paymentData">
+						<div class="infoDiv">
+							<div class="fieldName">Primary:</div>
+							<div class="fieldData">VISA XXXX-XXXX-XXXX-1234</div>
+						</div>
+
+
+						<div class="infoDiv">
+							<div class="fieldName"></div>
+							<div class="fieldData">Exp.
+								02/17
+								
+							</div>
+							<div class="fieldName"></div><span class="fieldData"><a href="#" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt87':'mainForm:j_idt87'},'');return false">Edit My Primary Funding</a></span>
+						</div>
+
+						<!-- Alternate Payment method is removed for the time being, as per HPQC Ticket 44163 -->
+								<div class="spacer"></div>
+		
+								<div class="infoDiv">
+									<div class="fieldName">Backup:</div>
+									<div class="fieldData">N/A</div>
+								</div>
+		
+								<div class="infoDiv">
+									<div class="fieldName"></div>
+									<div class="fieldData">
+									</div>
+									<div class="fieldName"></div><span class="fieldData">
+										<div style="float: right;" class="helpToggle helpToggleInactive" onclick="showHelp('helpContainerBackup', this);"></div><a href="#" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt152':'mainForm:j_idt152'},'');return false">Add My Backup Funding</a></span>
+									
+									
+									
+								</div>						
+								<div class="spacer"></div>
+					</div>
+					<div class="spacer"></div>
+			<!-- &lt;/c:if&gt; --></span>
+				<!--END payment INFORMATION-->
+
+
+
+				<!--YOUR CLIPPER CARDS-->
+				<div class="stepHeader">
+					<div class="title">
+						<p>My Clipper Cards</p>
+					</div>
+					<div class="policy">
+						<p>
+							<span id="collapseLink" style="cursor: pointer; text-decoration: underline; font-size: .75em; color: white;" onclick="collapseCards();">Collapse All</span> 
+								<span id="expandLink" style="cursor: pointer; display: none; text-decoration: underline; font-size: .75em; color: white;" onclick="expandCards();">Expand All</span>
+						</p>
+					</div>
+				</div>
+				<!--CARD 1-->
+				<div class="greyBox2">
+						<div class="darkGreyCardHeader">
+							<div class="plus toggleCardInfo" style="display: block;">-</div><div class="cardInfo">
+								<div class="infoDiv">
+									<div class="fieldName">Card Nickname:</div>
+									<div class="fieldData field90">
+										<span class="displayName">Golden Gate Bridge Limited Edition</span><span class="editName" style="display: none"><input id="mainForm:j_idt94:0:cardName" type="text" name="mainForm:j_idt94:0:cardName" value="GGB75" /></span>
+									</div>
+
+									<div class="fieldData field90 displayName" style="text-align: right;">
+										<span class="changeNameLink" style="text-decoration: underline; cursor: pointer; color: #0068A6; font-size: .8em;">Change</span>
+									</div>
+									<div class="editName" style="clear: both; float: left; display: none; text-align: right; width: 100%; padding-top: 5px;">
+										<div style="float:left"><input id="mainForm:j_idt94:0:j_idt99" type="submit" name="mainForm:j_idt94:0:j_idt99" value="Cancel" class="button69grey cancelEdit" onclick="mojarra.ab(this,event,'action',0,0);return false" />
+										</div>
+										<div style="float:right"><input id="mainForm:j_idt94:0:j_idt101" type="submit" name="mainForm:j_idt94:0:j_idt101" value="Save" class="button69 saveEdit" onclick="mojarra.ab(this,event,'action','mainForm:j_idt94:0:cardName',0);return false" />
+										</div>
+									</div>
+								</div>
+
+								<div class="infoDiv">
+									<div class="fieldName">Serial Number:</div>
+									<div class="fieldData field90">111</div>
+								</div></div>
+							<div class="clear"></div>
+						</div>
+
+
+						<div class="whiteGreyCardBox cardData">
+							<div class="cardInfo">
+								<div class="infoDiv">
+									<div class="fieldName">Type:</div>
+									<div class="fieldData">ADULT</div>
+								</div>
+
+								<div class="infoDiv">
+									<div class="fieldName">Status:</div>
+									<div class="fieldData">Active</div>
+								</div>
+
+								<div class="spacer"></div>
+								<div class="infoDiv">
+									<div class="fieldHeader">
+										<strong>Products on Card:</strong>
+									</div>
+								</div>
+									<div class="infoDiv">
+										<div class="fieldName">BART HVD 60/64:</div>
+										<div class="fieldData" style="width: auto;">$47.55</div><span style="float:right; font-size:.7em;">
+												<span id="d1203038987000000000000085C" class="disableAutoloadSpan linkSpan">Disable Autoload</span><a href="#" style="display:none" onclick="mojarra.jsfcljs(document.getElementById('mainForm'),{'mainForm:j_idt94:0:j_idt107:0:j_idt111':'mainForm:j_idt94:0:j_idt107:0:j_idt111'},'');return false">Disable Autoload</a></span>									
+									</div>
+									<!-- Start remove tag to comment -->
+									 
+									<!-- end remove tag -->
+									
+									<div class="spacer"></div>
+									<div class="infoDiv">
+										<div class="fieldName">Cash value:</div>
+										<div class="fieldData" style="width: auto;">$51.40</div>									
+									</div>
+									<!-- Start remove tag to comment -->
+									 
+									<!-- end remove tag -->
+									
+									<div class="spacer"></div>
+
+								
+								<div class="infoDiv">
+									<div class="fieldHeader" style="float: left;">
+										<strong>Products Ready for Pick Up:</strong>
+									</div>
+									<div style="float: left;" class="helpToggle helpToggleInactive" onclick="showHelp('helpContainerProducts', this);"></div>
+
+								</div><input id="mainForm:j_idt94:0:manage" type="submit" name="mainForm:j_idt94:0:manage" value="Add Value" style="margin-right:2%" class="button120 bottom-right" />
+								<div class="spacer10"></div>
+								<div class="infoDiv">
+									<div class="fieldName">View Recent Activity:</div>
+									<div class="fieldData field90"><a href="#" onclick="jsf.util.chain(this,event,'return seeHistory();','mojarra.jsfcljs(document.getElementById(\'mainForm\'),{\'mainForm:j_idt94:0:j_idt118\':\'mainForm:j_idt94:0:j_idt118\'},\'_blank\')');return false">Last 30 Days</a>
+									</div>
+									<div class="fieldData field90"><a href="#" onclick="jsf.util.chain(this,event,'return seeHistory();','mojarra.jsfcljs(document.getElementById(\'mainForm\'),{\'mainForm:j_idt94:0:j_idt120\':\'mainForm:j_idt94:0:j_idt120\'},\'_blank\')');return false">Last 60 Days</a>
+									</div>
+								</div>
+
+							</div>
+						</div>
+						<div class="spacer"></div>
+						<div class="darkGreyCardHeader">
+							<div class="plus toggleCardInfo" style="display: block;">-</div><div class="cardInfo">
+								<div class="infoDiv">
+									<div class="fieldName">Card Nickname:</div>
+									<div class="fieldData field90">
+										<span class="displayName">Bay Bridge Limited Edition</span><span class="editName" style="display: none"><input id="mainForm:j_idt94:1:cardName" type="text" name="mainForm:j_idt94:1:cardName" value="Standard Card" /></span>
+									</div>
+
+									<div class="fieldData field90 displayName" style="text-align: right;">
+										<span class="changeNameLink" style="text-decoration: underline; cursor: pointer; color: #0068A6; font-size: .8em;">Change</span>
+									</div>
+									<div class="editName" style="clear: both; float: left; display: none; text-align: right; width: 100%; padding-top: 5px;">
+										<div style="float:left"><input id="mainForm:j_idt94:1:j_idt99" type="submit" name="mainForm:j_idt94:1:j_idt99" value="Cancel" class="button69grey cancelEdit" onclick="mojarra.ab(this,event,'action',0,0);return false" />
+										</div>
+										<div style="float:right"><input id="mainForm:j_idt94:1:j_idt101" type="submit" name="mainForm:j_idt94:1:j_idt101" value="Save" class="button69 saveEdit" onclick="mojarra.ab(this,event,'action','mainForm:j_idt94:1:cardName',0);return false" />
+										</div>
+									</div>
+								</div>
+
+								<div class="infoDiv">
+									<div class="fieldName">Serial Number:</div>
+									<div class="fieldData field90">222</div>
+								</div></div>
+							<div class="clear"></div>
+						</div>
+
+
+						<div class="whiteGreyCardBox cardData">
+							<div class="cardInfo">
+								<div class="infoDiv">
+									<div class="fieldName">Type:</div>
+									<div class="fieldData">YOUTH</div>
+								</div>
+
+								<div class="infoDiv">
+									<div class="fieldName">Status:</div>
+									<div class="fieldData">Active</div>
+								</div>
+
+								<div class="spacer"></div>
+								<div class="infoDiv">
+									<div class="fieldHeader">
+										<strong>Products on Card:</strong>
+									</div>
+								</div>
+									<div class="infoDiv">
+										<div class="fieldName">Cash value:</div>
+										<div class="fieldData" style="width: auto;">$2.35</div>									
+									</div>
+									<!-- Start remove tag to comment -->
+									 
+									<!-- end remove tag -->
+									
+									<div class="spacer"></div>
+
+								
+								<div class="infoDiv">
+									<div class="fieldHeader" style="float: left;">
+										<strong>Products Ready for Pick Up:</strong>
+									</div>
+									<div style="float: left;" class="helpToggle helpToggleInactive" onclick="showHelp('helpContainerProducts', this);"></div>
+
+								</div>
+									<div class="infoDiv">
+										<div class="fieldName">Cash value - $5.95</div>
+									</div>
+									<div class="spacer"></div><input id="mainForm:j_idt94:1:manage" type="submit" name="mainForm:j_idt94:1:manage" value="Add Value" style="margin-right:2%" class="button120 bottom-right" />
+								<div class="spacer10"></div>
+								<div class="infoDiv">
+									<div class="fieldName">View Recent Activity:</div>
+									<div class="fieldData field90"><a href="#" onclick="jsf.util.chain(this,event,'return seeHistory();','mojarra.jsfcljs(document.getElementById(\'mainForm\'),{\'mainForm:j_idt94:1:j_idt118\':\'mainForm:j_idt94:1:j_idt118\'},\'_blank\')');return false">Last 30 Days</a>
+									</div>
+									<div class="fieldData field90"><a href="#" onclick="jsf.util.chain(this,event,'return seeHistory();','mojarra.jsfcljs(document.getElementById(\'mainForm\'),{\'mainForm:j_idt94:1:j_idt120\':\'mainForm:j_idt94:1:j_idt120\'},\'_blank\')');return false">Last 60 Days</a>
+									</div>
+								</div>
+
+							</div>
+						</div>
+						<div class="spacer"></div>
+
+
+
+					<div class="spacer"></div>
+				</div>
+				<!--END YOUR CLIPPER CARDS-->
+
+				<div class="spacer"></div>
+			</div>
+			
+			<!-- This is a hack to make the jquery dialog call a backend function --><span style="display:none">
+				<div id="securityData"><input id="mainForm:securityQuestion" type="text" name="mainForm:securityQuestion" value="City of birth" class="securityQuestion" /><input id="mainForm:securityAnswer" type="text" name="mainForm:securityAnswer" value="Zhangzhou" class="securityAnswer" />
+				</div>
+				<div id="saveBtn"><input type="submit" name="mainForm:j_idt126" value="Save" />
+				</div></span>
+				<div id="dialogGetSecurityQuestion" title="Security Question">
+					<div style="font-size:.7em; text-align:left;color: #FF0000;">
+						There is no security question set for this account. Select a security question and answer, and click “Save” to continue.<br />
+					</div> 
+					<div class="spacer"></div> 
+					<div class="radioDiv" style="clear:left;font-size:.7em">
+							<div class="textQuestion">
+								<span class="question">Security Question</span>
+							</div>
+							<div class="textAnswer"><select id="mainForm:ddlSecurityQuestion" name="mainForm:ddlSecurityQuestion" class="ddlQuestion" size="1">	<option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+	<option value="What is your city of birth?">What is your city of birth?</option>
+	<option value="What is your best friend's name?">What is your best friend's name?</option>
+</select>
+							</div>
+					</div>
+					<div class="spacer"></div> 
+					<div class="radioDiv" style="clear:left;font-size:.7em">
+							<div class="textQuestion">
+								<span class="question">Answer</span>
+							</div>
+							<div class="textAnswer">
+								<input maxlength="30" id="txtSecAnswer" class="input170 securityAnswer" onblur="validateAnswer(this,this.value)" />
+							</div>
+							<div class="valMsg"></div>
+					</div>					
+				</div><div id="mainForm:pnlNewEcashVal" style="display:none"><input id="mainForm:newEcashAmtVal" type="text" name="mainForm:newEcashAmtVal" value="0.0" style="text-align:right;" /><input id="mainForm:changeAutoloadCash" type="submit" name="mainForm:changeAutoloadCash" value="" onclick="mojarra.ab(this,event,'action','mainForm:pnlNewEcashVal','mainForm:pnlErrCashAutoloadAmount');return false" /></div><div id="mainForm:pnlNewParkingPurseVal" style="display:none"><input id="mainForm:newParkingPurseAmtVal" type="text" name="mainForm:newParkingPurseAmtVal" value="0.0" style="text-align:right;" /><input id="mainForm:changeAutoloadParkingPurse" type="submit" name="mainForm:changeAutoloadParkingPurse" value="" onclick="mojarra.ab(this,event,'action','mainForm:pnlNewParkingPurseVal','mainForm:pnlErrParkingAutoloadAmount');return false" /></div>				
+				
+			
+			<div id="dialogConfirmDisableAutoload" title="Confirm" style="font-size:.8em; text-align:left;">			
+			
+				Are you sure you want to disable Autoload?
+			</div>
+			
+			<div id="dialogNoHistory" title="Not Available" style="display:none">
+				<span style="font-size:.75em; font-weight:normal">
+					You may not view recent activity until after 4am.
+				</span>
+			</div>
+			
+			<div id="dialogChangeAutoloadAmt" title="Change Clipper Cash Autoload Amount" style="display:none"><span id="mainForm:pnlErrCashAutoloadAmount" style="color:red"></span>
+				New Amount: <input style="text-align:right" id="newEcashAmt" />
+			</div>
+			<div id="dialogChangeAutoloadParkingPurseAmt" title="Change Clipper Parking value Autoload Amount" style="display:none"><span id="mainForm:pnlErrParkingAutoloadAmount" style="color:red"></span>
+				New Amount: <input style="text-align:right" id="newParkingPurseAmt" />
+			</div>
+				</div>
+				<div id="rightCol216">
+			<!--HELP BOX-->
+			<div id="helpContainerOne" class="helpContainer">
+				<div class="helpArrow margin5"></div>
+				<div class="helpBox">
+					<div class="helpCloseX" onclick="resetHelp();"></div>
+					<div class="helpTextMargin">
+					<p class="helpText">
+							<strong>Help: Profile Information</strong>
+						</p>
+						<p class="helpText">Welcome to My Clipper. You can manage your account information, set your card up for Autoload, add value to your card, and more. Use the navigation bar on the left to access online services.</p>
+					</div>
+				</div>
+			</div>
+			<!--END HELP BOX-->
+
+			<!--HELP BOX-->
+			<div id="helpContainerProducts" class="helpContainer margin700">
+				<div class="helpArrow margin10"></div>
+				<div class="helpBox">
+					<div class="helpCloseX" onclick="resetHelp();"></div>
+					<div class="helpTextMargin">
+						<p class="helpText">
+							<strong>Help: Products Ready for Pick Up</strong>
+						</p>
+						<p class="helpText">Certain Clipper transit products are loaded to your account when you tag on at the appropriate card reader or when the eligibility period begins.</p>
+					</div>
+				</div>
+			</div>
+			
+			<div id="helpContainerBackup" class="helpContainer">
+				<div class="helpArrow margin5"></div>
+				<div class="helpBox">
+					<div class="helpCloseX" onclick="resetHelp();"></div>
+					<div class="helpTextMargin">
+
+						<p class="helpText">
+							<strong>Help: Backup Payment</strong>
+						</p>
+						<p class="helpText">
+							You can add a credit card to your account profile to be used as a backup payment source. 
+							This backup credit card will only be charged if we cannot charge your primary payment source.
+							<br /> <br /> If
+							you have questions about the information requested on this page,
+							call Clipper Customer Service at 877-878-8883. (TDD/TTY 711 or
+							800-735-2929).
+
+						</p>
+					</div>
+				</div>
+				<div class="clear"></div>
+			</div>
+				</div>
+				<div id="footer">
+						<div id="newsFooter">
+							<div class="customerServiceBox">
+								Clipper Customer <br /> Service Center
+							</div>
+							<div class="box">
+								<p>
+									<span class="title">Phone:</span> 877.878.8883 <br /> <span class="title">Fax:</span> 925.686.8221
+								</p>
+							</div>
+							<div class="box middle">
+								<p>
+									<span class="title">TDD/TTY:</span> 711 or 800.735.2929 <br />
+									<span class="title">Email:</span> <a href="mailto:custserv@clippercard.com">custserv@clippercard.com</a>
+								</p>
+							</div>
+							<div class="box">
+								<p>
+									<span class="title">M - F:</span> 6 a.m. - 8 p.m. <br /> <span class="title">Sat - Sun:</span> 8 a.m. - 5 p.m.
+								</p>
+							</div>
+							<div class="clear"></div>
+						</div>
+						<div id="footermain">
+							<div id="footerLogo">
+								<a class="logo" href="http://www.511.org/" target="_new">Clipper</a>
+							</div>
+							<div class="listHolder">
+								<ul>
+									<li><a href="../ClipperWeb/spanish.do">Espanol</a></li>
+									<li><a href="../ClipperWeb/chinese.do"><img src="/ClipperCard/javax.faces.resource/chineseFooter.jpg.jsf?ln=images/global" border="0" /></a></li>
+								</ul>
+								<div id="accessibility">
+									<div class="icon">
+										<img src="/ClipperCard/javax.faces.resource/icon_accessibility.png.jsf?ln=images/global" />
+									</div>
+									<div class="text">
+										<a href="../ClipperWeb/accessibility.do">Accessibility</a>
+									</div>
+								</div>
+							</div>
+							
+							<div class="listHolder">
+								<ul>
+									<li><a href="../ClipperWeb/privacy.do">Privacy</a></li>
+									<li><a href="../ClipperWeb/faq.do">FAQ</a></li>
+									<li><a href="../ClipperWeb/pressRoom.do">Media</a></li>
+									<li><a href="../ClipperWeb/download.do">Forms</a></li>
+									<li><a href="../ClipperWeb/agreement.do">Cardholder Agreement</a></li>
+									<li><a href="../ClipperWeb/downloads/Clipper_terms_of_use_11.14.12.pdf" target="_new">Website Terms of Use</a></li>
+									<li><a href="../ClipperWeb/sitemap.do">Site Map</a></li>
+									<li><a href="contactUs.jsf">Contact Us</a></li>
+									<li class="socialIcons"><a href="#"><img src="/ClipperCard/javax.faces.resource/icon_facebook.png.jsf?ln=images/global" /></a></li>
+									<li class="socialIcons"><a href="#"><img src="/ClipperCard/javax.faces.resource/icon_twitter.png.jsf?ln=images/global" /></a></li>
+								</ul>
+								
+							</div>
+							<div class="clear"></div>
+						</div>
+						<!-- END footermain -->
+				</div>
+			</div>
+			<div id="bottomShadow"> </div>
+		</div>
+		<div id="copyright">
+			<p>©2011 Metropolitan Transportation Commission</p>
+		</div><script language="javascript" type="text/javascript">//<![CDATA[
+function faceletsDebug(URL) { day = new Date(); id = day.getTime(); eval("page" + id + " = window.open(URL, '" + id + "', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=800,height=600,left = 240,top = 212');"); };var faceletsOrigKeyup = document.onkeyup; document.onkeyup = function(e) { if (window.event) e = window.event; if (String.fromCharCode(e.keyCode) == 'D' & e.shiftKey & e.ctrlKey) faceletsDebug('/ClipperCard/dashboard.jsf?facelets.ui.DebugOutput=1395634466428'); else if (faceletsOrigKeyup) faceletsOrigKeyup(e); };
+//]]>
+</script>
+		<script type="text/javascript">
+			function notAlreadyProcessing(){
+				!$("#loadingIcon").is(":visible")
+			}
+		</script><input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="1587291302616692763:3288066323345884462" autocomplete="off" />
+</form>
+	<div id="loadingIcon">
+		<img src="/ClipperCard/javax.faces.resource/loadSpin.gif.jsf?ln=images/loaders" />
+	</div>
+</body>
+</html>

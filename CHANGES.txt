@@ -1,2 +1,3 @@
+v0.2.0, 2014-03-23 added CLI entry point, use BeautifulSoup4 instead of PyQuery, plus many improvements
 v0.1.0, 2012-12-01 initial release - gets cardholder details and card balances
 v0.1.1, 2012-12-01 doc fix - include css file in manifest

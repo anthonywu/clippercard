@@ -1,5 +1,5 @@
 """
-Copyright (c) 2012 Anthony Wu (@anthonywu)
+Copyright (c) 2012-2014 Anthony Wu (https://github.com/anthonywu)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -21,167 +21,110 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # === imports ===
 
-import re
-from collections import namedtuple
-
-# === third-party libs ===
-
+import bs4
+import clippercard.parser as parser
 import requests
-from pyquery import PyQuery # requires lxml
-
-# a fake user agent to make the access sessions look human-driven
-FAKE_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11'
-
-# === Text Utilities ===
-
-WHITESPACE = re.compile('\s+')
-NOT_DIGITS = re.compile('\D')
-
-def cleanup_whitespace(text_content):
-    """clean up junk whitespace that comes with every table cell"""
-    return re.sub(WHITESPACE, ' ', text_content.strip())
-
-def cleanup_card_serial_number(card_num_content):
-    """clean up junk content that comes from the web site's card serial number table cell"""
-    return re.sub(NOT_DIGITS, '', card_num_content)
 
 
-# === Simple objects for Clipper Card logic ===
+# === Error Classes ===
 
-# a card has a serial number, a type of {Adult, Senior, Youth, Disabled Discount} and status of {Active, Inactive}
-Card = namedtuple('Card', ['serial_number', 'type', 'status'])
-
-# an account has a dict of personal detail key-value pairs, and can be associated with multiple cards
-Account = namedtuple('Account', ['personal_details', 'cards'])
-
-# a cash card as a 'valid_for' float value, a pass has an 'expires_on' date
-Balance = namedtuple('Balance', ['product', 'valid_for', 'expires_on', 'autoload_options'])
+class ClipperCardError(Exception):
+    # base error for client
+    pass
 
 
-# === Parsers for Clipper Card web site content
+class ClipperCardAuthError(ClipperCardError):
+    # unable to login with credentials
+    pass
 
-def parse_acct_content(acct_html_content):
-    """Parse https://www.clippercard.com/ClipperWeb/accountManagement.do for cardholder details and card list"""
-    query_acct = PyQuery(acct_html_content)
-    # the first table on the page contains personal details, the second contains card details
-    personal_detail_table, card_table = query_acct('table')[:2]
 
-    personal_details = {}
-    for row in personal_detail_table.findall('tr'):
-        label_content, data_content = [str(c.text_content()).strip() for c in row.findall('td')[:2]]
-        if label_content:
-            personal_details[label_content.strip(':')] = cleanup_whitespace(data_content)
+class ClipperCardContentError(ClipperCardError):
+    # unable to recognize web content
+    pass
 
-    # TODO: currently, card parsing logic assumes existence of only one card in this account
-    card_data = {}
-    for row in card_table.findall('tr'):
-        # Note: strangely, card data is provided in unicode
-        label_content, data_content = [unicode(c.text_content()).strip() for c in row.findall('td')[:2]]
-        if label_content:
-            # Parse 'Serial Number:', 'Type:', 'Status:' label texts into Card namedtuple keys
-            attr = label_content.strip(':').lower().replace(' ', '_')
-            val = cleanup_whitespace(data_content)
-            if attr == 'serial_number':
-                val = str(cleanup_card_serial_number(val))
-            card_data[attr] = val
-
-    return Account(
-        personal_details=personal_details,
-        cards=[Card(**card_data)]
-        )
-
-def parse_card_balance(balance_html_content):
-    """Parse https://www.clippercard.com/ClipperWeb/cardValue.do response page for a list of balances for one card"""
-    query_balance = PyQuery(balance_html_content)
-    value_table = query_balance('table')[0]
-    data_rows = value_table.findall('tr')[1:] # discard the header row
-    balances = []
-    for row in data_rows:
-        product, val, autoload_options = [str(c.text_content().strip()) for c in row.findall('td')[:3]]
-        if val.startswith('$'):
-            valid_for = float(val[1:])
-            expires_on = None
-        else:
-            expires_on = val
-            valid_for = None
-        if autoload_options == '-':
-            autoload_options = None
-        balances.append(
-            Balance(
-                product=product,
-                valid_for=valid_for,
-                expires_on=expires_on,
-                autoload_options=autoload_options
-                )
-            )
-    return balances
 
 # === ClipperCardWebSession ===
 
+def soupify(method, *method_pargs, **method_kwargs):
+    # helper: makes the method call, puts content in BeautifulSoup
+    resp = method(*method_pargs, **method_kwargs)
+    soup = bs4.BeautifulSoup(resp.content)
+    return resp, soup
+
+
 class ClipperCardWebSession(requests.Session):
-    LOGIN_URL = 'https://www.clippercard.com/ClipperWeb/login.do'
+    """
+    A stateful session for clippercard.com
+    """
+    LOGIN_URL = 'https://www.clippercard.com/ClipperCard/loginFrame.jsf'
     BALANCE_URL = 'https://www.clippercard.com/ClipperWeb/cardValue.do?cardNumber=%s'
+    HEADERS = {
+        'FAKE_USER_AGENT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
+        }
 
-    class InvalidLogin(Exception):
-        pass
-
-    def __init__(self):
-        requests.Session.__init__(self, headers={
-                'User-Agent': FAKE_USER_AGENT
-                })
+    def __init__(self, username=None, password=None):
+        requests.Session.__init__(self)
+        self.headers.update(self.HEADERS)
+        self._dashboard_content = None
+        if username and password:
+            self.login(username, password)
 
     def login(self, username, password):
-        form_data = {
-            'username': username,
-            'password': password
-            }
-        resp = self.post(self.LOGIN_URL, data=form_data)
-        if not 'Account Management' in resp.content:
-            raise self.InvalidLogin('Invalid login info for %s' % username)
-        return resp
+        """
+        Mimicks user login via /ClipperCard/loginFrame.jsf
+        """
+        resp_login, soup_login = soupify(self.get, self.LOGIN_URL)
+        form_login = soup_login.find('form')
+        if not form_login:
+            raise ClipperCardContentError('Cannot find login form on login page')
+        login_inputs = form_login.find_all('input')
 
-    def check_balance(self, card_num):
-        resp = self.post(self.BALANCE_URL % card_num)
-        return resp
-
-
-# === Utils for human-readable display  ===
-
-ACCT_PRINT_TEMPLATE = '''Cardholder: %(Cardholder)s
-Email: %(Email)s
-Address: %(Address)s
-Phone: %(Phone)s
-'''
-
-def print_acct_info(acct_data, balance_lookup):
-    print ACCT_PRINT_TEMPLATE % acct_data.personal_details
-    for card in acct_data.cards:
-        balances = balance_lookup[card.serial_number]
-        print 'Card: %s - %s (%s)' % (card.serial_number, card.type.title(), card.status)
-        for b in balances:
-            autoload_text = b.autoload_options or 'n/a'
-            if b.expires_on:
-                print '- %s: Expires on %s, Autoload: %s' % (b.product, b.expires_on, autoload_text)
-            if b.valid_for:
-                print '- %s: Valid for $%s, Autoload: %s' % (b.product, b.valid_for, autoload_text)
-
-
-# === Main ===
-
-if __name__ == '__main__':
-    import os, getpass
-    try:
-        auth = {
-            'username': os.environ.get('CLIPPER_USERNAME', None) or raw_input('Clipper Card username > '),
-            'password': os.environ.get('CLIPPER_PASSWORD', None) or getpass.unix_getpass('Clipper Card password > ')
+        post_data = {
+            'javax.faces.source': 'j_idt14:submitLogin',
+            'javax.faces.partial.event': 'click',
+            'javax.faces.partial.execute ': ':submitLogin j_idt14:username j_idt14:password',
+            'javax.faces.partial.render': 'j_idt14:err',
+            'javax.faces.behavior.event': 'action',
+            'javax.faces.partial.ajax': 'true'
         }
-        session = ClipperCardWebSession()
-        login_resp = session.login(**auth)
-        acct = parse_acct_content(login_resp.content)
-        balance_lookup = {} # a map of serial_number --> list of balances
-        for c in acct.cards:
-            resp = session.check_balance(c.serial_number)
-            balance_lookup[c.serial_number] = parse_card_balance(resp.content)
-        print_acct_info(acct, balance_lookup)
-    except Exception, e:
-        print e.message
+
+        # gather the dynamic post-data from the form, but replace the username/password pair
+        for each in login_inputs:
+            name, value = (each.get('name'), each.get('value'))
+            if name.endswith('username'):
+                value = username
+            elif name.endswith('password'):
+                value = password
+            post_data[name] = value
+
+        resp, soup = soupify(self.post, self.LOGIN_URL, data=post_data)
+        invalid_creds_span = soup.find('span', text='Invalid Credentials')
+        if invalid_creds_span:
+            raise ClipperCardAuthError('Invalid login info for %s' % username)
+        else:
+            self._dashboard_content = resp.content
+        return resp
+
+    @property
+    def user_profile(self):
+        """
+        Returns *Profile* namedtuples associated with logged in user
+        """
+        if not self._dashboard_content:
+            raise ClipperCardError('Must login first')
+        return parser.parse_profile_data(self._dashboard_content)
+
+    @property
+    def cards(self):
+        """
+        Returns list of *Card* namedtuples associated with logged in user
+        """
+        if not self._dashboard_content:
+            raise ClipperCardError('Must login first')
+        return parser.parse_cards(self._dashboard_content)
+
+    def get_summary(self):
+        lines = [str(self.user_profile), '-' * 40]
+        for index, card in enumerate(self.cards, 1):
+            lines.append('Card {0}: {1}'.format(index, str(card)))
+        return '\n'.join(lines)
