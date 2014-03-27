@@ -14,7 +14,7 @@
 
 Not only is the `clippercard web site <https://www.clippercard.com>`_ a total UX/UI disaster, its behind-the-scene's HTML structure and HTTP protocol is a complete exercise in palmface. This library aims to provide an unofficial but sensible interface to the official web service.
 
-Note: I love the actual usage of ClipperCard on buses and trains, my complaints about the service is purely isolated to its web interface. I saw a problem, and I solved it for myself, that's all.
+Note: I love the actual user experience of ClipperCard on buses and trains, my complaints about the service are purely isolated to its web interface. I saw a problem, and I solved it for myself, that's all.
 
 Features
 --------
