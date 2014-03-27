@@ -14,6 +14,8 @@
 
 Not only is the `clippercard web site <https://www.clippercard.com>`_ a total UX/UI disaster, its behind-the-scene's HTML structure and HTTP protocol is a complete exercise in palmface. This library aims to provide an unofficial but sensible interface to the official web service.
 
+Note: I love the actual usage of ClipperCard on buses and trains, my complaints about the service is purely isolated to its web interface. I saw a problem, and I solved it for myself, that's all.
+
 Features
 --------
 
@@ -21,7 +23,7 @@ Features
 - Multiple cards' data
 - For each card, multiple products and balances
 
-I don't have access to all products loadable on the ClipperCard, so transit agency support is limtied to what I personally use for now. If you'd like me to add support for your product, send me the page source from your `account home page <https://www.clippercard.com/ClipperCard/dashboard.jsf>`_
+I don't have access to all products loadable on the ClipperCard, so transit agency support is limited to what I personally use for now. If you'd like me to add support for your product, send me the page source from your `account home page <https://www.clippercard.com/ClipperCard/dashboard.jsf>`_
 
 Installation
 ------------
