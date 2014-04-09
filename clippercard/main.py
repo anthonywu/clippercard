@@ -19,6 +19,7 @@ __doc__ = __doc__.format(
     )
 
 import clippercard
+import clippercard.porcelain
 import configparser
 import docopt
 import os.path
@@ -65,7 +66,7 @@ def main():
         username, password = _get_client_auth(args)
         session = clippercard.Session(username, password)
         if args['summary']:
-            print(session.get_summary())
+            print(clippercard.porcelain.tabular_output(session.user_profile, session.cards))
     except (clippercard.client.ClipperCardError, ClipperCardCommandError) as e:
         sys.exit(e.message)
 

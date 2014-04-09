@@ -19,8 +19,31 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import clippercard.client as client
-Session = client.ClipperCardWebSession
+import prettytable
 
-__version__ = '0.3.0'
+def tabular_output(user_profile, cards):
+    """
+    Pretty prints a user profile and its associated cards and products.
+    """
+    pt = prettytable.PrettyTable(['name', 'value'], header=False)
+    pt.align['name'] = 'r'
+    pt.align['value'] = 'l'
+    for k, v in user_profile._asdict().iteritems():
+        pt.add_row([k, v])
 
+    ct = prettytable.PrettyTable(['Card', 'Serial', 'Type', 'Status', 'Product', 'Value'])
+    for col in ct.align.keys():
+        ct.align[col] = 'l'
+    for c in cards:
+        for p in c.products:
+            ct.add_row([
+                c.nickname,
+                c.serial_number,
+                c.type,
+                c.status,
+                p.name,
+                p.value
+                ])
+
+    output = '\n'.join([pt.get_string(), ct.get_string()])
+    return output

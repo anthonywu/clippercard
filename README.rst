@@ -53,16 +53,19 @@ You also get a super convenient command line binary ``clippercard``::
 
     $ clippercard summary
 
-    Name: ANTHONY WU
-    Email: anthonywu@example.com
-    Phone: 415-555-5555
-    Address: 1 Main St San Francisco, CA 94103
-    ----------------------------------------
-    Card 1: 1234567890 "Golden Gate Bridge Limited Edition" (ADULT - Active)
-      - BART HVD 60/64: $47.55
-      - Cash value: $51.40
-    Card 2: 1234567891 "Bay Bridge Limited Edition" (ADULT - Active)
-      - Cash value: $2.35
+    +---------+-------------------------------------------+
+    |    name | ANTHONY WU                                |
+    |   email | anthonywu@example.com                     |
+    | address | 1 Main St, San Francisco, CA 94103        |
+    |   phone | 415-555-5555                              |
+    +---------+-------------------------------------------+
+    +---------------+------------+-------+--------+----------------+--------+
+    | Card          | Serial     | Type  | Status | Product        | Value  |
+    +---------------+------------+-------+--------+----------------+--------+
+    | GGB75         | 1234567890 | ADULT | Active | BART HVD 60/64 | $16.20 |
+    | GGB75         | 1234567890 | ADULT | Active | Cash value     | $32.40 |
+    | Standard Card | 1234567891 | ADULT | Active | Cash value     | $64.80 |
+    +---------------+------------+-------+--------+----------------+--------+
 
 
 If you wish to use clippercard without specifying username/password on the CLI, create a file ``~/.clippercardrc`` with this format::

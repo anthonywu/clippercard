@@ -6,7 +6,7 @@ except ImportError:
 
 setup(
     name='clippercard',
-    version='0.2.0',
+    version='0.3.0',
     author='Anthony Wu',
     author_email='anthonywu@systemfu.com',
     packages=['clippercard'],
@@ -25,6 +25,7 @@ setup(
         'BeautifulSoup4 >= 4.3.2',
         'configparser == 3.3.0r2',
         'docopt >= 0.6.1',
+        'prettytable >= 0.7.2',
         'requests >= 2.2.1'
     ],
 )
