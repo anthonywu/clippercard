@@ -93,8 +93,8 @@ You also get a super convenient command line binary ``clippercard``::
 If you wish to use clippercard without specifying username/password on the CLI, create a file ``~/.clippercardrc`` with this format::
 
     [default]
-    username = <replace_with_your_email>
-    password = <replace_with_your_password>
+    username = anthonywu@example.com
+    password = superseekrit
 
 You may toggle accounts via the ``--account`` flag on the command line to access one of several configs in the file::
 
