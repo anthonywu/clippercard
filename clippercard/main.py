@@ -8,10 +8,10 @@ Usage:
 Options:
   -h --help             Show this screen.
   -v --version          Show version.
-  --account=<acct>      Optional, account section name in ~/.godaddyrc config [Default: default].
+  --account=<acct>      Optional, account section name in ~/.clippercardrc config [Default: default].
   --config=<cfg>        Optional, account login config file path [Default: ~/.clippercardrc].
-  --username=<user>     Optional, GoDaddy login username if not using config file.
-  --password=<pass>     Optional, GoDaddy login password if not using config file.
+  --username=<user>     Optional, login username if not using config file.
+  --password=<pass>     Optional, login password if not using config file.
 """
 
 __doc__ = __doc__.format(
