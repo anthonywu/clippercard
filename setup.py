@@ -18,7 +18,7 @@ setup(
     },
     scripts=[],
     url='https://github.com/anthonywu/clippercard',
-    license='LICENSE.txt',
+    license='LICENSE',
     description='Unofficial Python API for Clipper Card (transportation pass used in the San Francisco Bay Area)',
     long_description=open('README.rst').read(),
     install_requires=[

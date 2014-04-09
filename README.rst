@@ -8,7 +8,7 @@
         :target: https://crate.io/packages/clippercard/
         
 .. image:: https://pypip.in/license/vxapi/badge.png
-        :target: ./LICENSE.txt
+        :target: ./LICENSE
 
 ``clippercard`` is an unofficial web API to clippercard.com, written in Python.
 
