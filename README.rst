@@ -14,7 +14,14 @@
 
 Not only is the `clippercard web site <https://www.clippercard.com>`_ a total UX/UI disaster, its behind-the-scene's HTML structure and HTTP protocol is a complete exercise in palmface. This library aims to provide an unofficial but sensible interface to the official web service.
 
-Note: I love the actual user experience of ClipperCard on buses and trains, my complaints about the service are purely isolated to its web interface. I saw a problem, and I solved it for myself, that's all.
+I enjoy the actual user experience of ClipperCard on buses and trains. My complaints about the service are purely isolated to its web interface. I saw a problem, and I solved it for myself, that's all.
+
+Project Goal
+------------
+
+As an advocate for data accessibility, I believe our dollars, our votes, our voices and our actions can nudge institutions in the direction we'd like them to go. At Bay Area's `Metropolitan Transportation Commission <http://www.mtc.ca.gov/about_mtc/staff_contacts.htm>`_, I am sure there are a lot of great people doing good work to the best of their ability, and within the context of prioritization, organizational structure and resources available to them.
+
+I encourage the staff of MTA reading this project to see this effort as a nudge for a public and official API. The moment they put up an API that obsoletes this project, I will happily direct followers to the official solution. If you'd like them to increase attention to data accessibility, you can send them an email at `info@mtc.ca.gov <mailto:info@mtc.ca.gov>`_ and tell them I sent you.
 
 Features
 --------
@@ -23,7 +30,18 @@ Features
 - Multiple cards' data
 - For each card, multiple products and balances
 
-I don't have access to all products loadable on the ClipperCard, so transit agency support is limited to what I personally use for now. If you'd like me to add support for your product, send me the page source from your `account home page <https://www.clippercard.com/ClipperCard/dashboard.jsf>`_
+I don't have access to all products loadable on the ClipperCard, so transit product variant support is limited to what I personally use for now. If you'd like me to add support for your product, send me the page source from your `account home page <https://www.clippercard.com/ClipperCard/dashboard.jsf>`_
+
+Security and Privacy
+--------------------
+
+It's important to point out that:
+
+- This project does not collect your personal information or clippercard.com login credentials.
+- This project is not a hosted service, your data is not stored or sent to any 3rd party service.
+
+For now, this project is targeted at other software developers, who are capable of assessing my source code for security implications.
+
 
 Installation
 ------------
