@@ -27,6 +27,8 @@ As an advocate for data accessibility, I believe our dollars, our votes, our voi
 
 I encourage the staff of MTA reading this project to see this effort as a nudge for a public and official API. The moment they put up an API that obsoletes this project, I will happily direct followers to the official solution. If you'd like them to increase attention to data accessibility, you can send them an email at info@mtc.ca.gov and tell them I sent you.
 
+If you'd like to see more development, you can [support this project on Gittip](https://www.gittip.com/anthonywu/)
+
 Features
 --------
 
