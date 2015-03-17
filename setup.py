@@ -6,7 +6,7 @@ except ImportError:
 
 setup(
     name='clippercard',
-    version='0.3.0',
+    version='0.3.1',
     author='Anthony Wu',
     author_email='anthonywu@systemfu.com',
     packages=['clippercard'],
