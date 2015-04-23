@@ -23,7 +23,7 @@ setup(
     long_description=open('README.rst').read(),
     install_requires=[
         'BeautifulSoup4 >= 4.3.2',
-        'configparser == 3.3.0.post2',
+        'configparser == 3.5.0b2',
         'docopt >= 0.6.1',
         'prettytable >= 0.7.2',
         'requests >= 2.2.1'
