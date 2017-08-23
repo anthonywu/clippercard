@@ -48,7 +48,7 @@ class ClipperCardContentError(ClipperCardError):
 def soupify(method, *method_pargs, **method_kwargs):
     # helper: makes the method call, puts content in BeautifulSoup
     resp = method(*method_pargs, **method_kwargs)
-    soup = bs4.BeautifulSoup(resp.content)
+    soup = bs4.BeautifulSoup(resp.content, "html.parser")
     return resp, soup
 
 

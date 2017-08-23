@@ -106,7 +106,7 @@ def parse_profile_data(account_page_content):
     """
     Parse user profile from /ClipperCard/dashboard.jsf
     """
-    soup = bs4.BeautifulSoup(account_page_content)
+    soup = bs4.BeautifulSoup(account_page_content, "html.parser")
     profile_data = soup.find('div', attrs={'class': 'profileData'})
     fields = profile_data.find_all('div', attrs={'class': 'fieldData'})
     values = [cleanup_whitespace(f.get_text()) for f in fields]
@@ -139,7 +139,7 @@ def parse_cards(account_page_content):
     """
     begin = account_page_content.index('<!--YOUR CLIPPER CARDS-->')
     end = account_page_content.index('<!--END YOUR CLIPPER CARDS-->')
-    card_soup = bs4.BeautifulSoup(account_page_content[begin:end])
+    card_soup = bs4.BeautifulSoup(account_page_content[begin:end], "html.parser")
     serial_numbers = find_values(card_soup, 'Serial Number:', get_next_sibling_text)
     nicknames = find_values(card_soup, 'Card Nickname:', get_inner_display_text)
     types = find_values(card_soup, 'Type:', get_next_sibling_text)
