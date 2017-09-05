@@ -102,20 +102,24 @@ You may toggle accounts via the ``--account`` flag on the command line to access
     username = <replace_with_your_email>
     password = <replace_with_your_password>
     
-    [wife]
+    [spare]
     username = <replace_with_login_email>
     password = <replace_with_login_password>
     
-The ``wife`` credentials can then be accessed via::
+The `spare` credentials can then be accessed via::
 
-    $ clippercard summary --account=wife
+    $ clippercard summary --account=spare
 
 Contribute
 ----------
 
-#. fork the repo
-#. make your changes
-#. follow local style consistency, then PEP8
-#. run pyflakes/frosted on your diffs
+#. fork the repo to your personal GitHub account
+#. make your changes in your repo
+#. for Python source, follow local style consistency and PEP8
+#. run `pyflakes`/`frosted` on your diffs
 #. add unit tests, make sure they pass =)
-#. send me a pull request w/ explanation of design decisions
+#. remember to bump the version number wherever applies
+#. add a new line for your revision to `CHANGES.txt` describing your change
+#. send a pull request to https://github.com/clippercard/clippercard-python w/ explanation of problem statement and design decisions
+#. respond to all pull request code review requests in your branch and submit the requested changes in new commits
+#. communicate with the maintainers to merge the finalized pull request and publish your changes
