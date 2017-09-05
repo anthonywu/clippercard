@@ -1,5 +1,5 @@
 """
-Copyright (c) 2012-2014 Anthony Wu (https://github.com/anthonywu)
+Copyright (c) 2012-2017 (https://github.com/clippercard/clippercard-python)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

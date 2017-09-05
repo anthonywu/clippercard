@@ -7,8 +7,8 @@ except ImportError:
 setup(
     name='clippercard',
     version='0.3.3',
-    author='Anthony Wu',
-    author_email='anthonywu@systemfu.com',
+    author='Unofficial ClipperCard API devs',
+    author_email='goldengate88@systemfu.com',
     packages=['clippercard'],
     package_dir = {'clippercard':'clippercard'},
     entry_points = {
@@ -17,7 +17,7 @@ setup(
         ]
     },
     scripts=[],
-    url='https://github.com/anthonywu/clippercard',
+    url='https://github.com/clippercard/clippercard-python',
     license='LICENSE',
     description='Unofficial Python API for Clipper Card (transportation pass used in the San Francisco Bay Area)',
     long_description=open('README.rst').read(),

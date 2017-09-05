@@ -27,8 +27,6 @@ As an advocate for data accessibility, I believe our dollars, our votes, our voi
 
 I encourage the staff of MTA reading this project to see this effort as a nudge for a public and official API. The moment they put up an API that obsoletes this project, I will happily direct followers to the official solution. If you'd like them to increase attention to data accessibility, you can send them an email at info@mtc.ca.gov and tell them I sent you.
 
-If you'd like to see more development, you can `support this project on Gittip <https://www.gittip.com/anthonywu/>`_
-
 Features
 --------
 
@@ -78,8 +76,8 @@ You also get a super convenient command line binary ``clippercard``::
     $ clippercard summary
 
     +---------+-------------------------------------------+
-    |    name | ANTHONY WU                                |
-    |   email | anthonywu@example.com                     |
+    |    name | JOHN SMITH                                |
+    |   email | jsmith@example.com                        |
     | address | 1 Main St, San Francisco, CA 94103        |
     |   phone | 415-555-5555                              |
     +---------+-------------------------------------------+
@@ -95,7 +93,7 @@ You also get a super convenient command line binary ``clippercard``::
 If you wish to use clippercard without specifying username/password on the CLI, create a file ``~/.clippercardrc`` with this format::
 
     [default]
-    username = anthonywu@example.com
+    username = jsmith@example.com
     password = superseekrit
 
 You may toggle accounts via the ``--account`` flag on the command line to access one of several configs in the file::
