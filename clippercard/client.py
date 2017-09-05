@@ -48,7 +48,7 @@ class ClipperCardContentError(ClipperCardError):
 def soupify(method, *method_pargs, **method_kwargs):
     # helper: makes the method call, puts content in BeautifulSoup
     resp = method(*method_pargs, **method_kwargs)
-    soup = bs4.BeautifulSoup(resp.content)
+    soup = bs4.BeautifulSoup(resp.content, "html.parser")
     return resp, soup
 
 
@@ -80,10 +80,10 @@ class ClipperCardWebSession(requests.Session):
         login_inputs = form_login.find_all('input')
 
         post_data = {
-            'javax.faces.source': 'j_idt14:submitLogin',
+            'javax.faces.source': 'j_idt13:submitLogin',
             'javax.faces.partial.event': 'click',
-            'javax.faces.partial.execute ': ':submitLogin j_idt14:username j_idt14:password',
-            'javax.faces.partial.render': 'j_idt14:err',
+            'javax.faces.partial.execute ': ':submitLogin j_idt13:username j_idt13:password',
+            'javax.faces.partial.render': 'j_idt13:err',
             'javax.faces.behavior.event': 'action',
             'javax.faces.partial.ajax': 'true'
         }
