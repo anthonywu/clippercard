@@ -4,11 +4,6 @@
 .. image:: https://badge.fury.io/py/clippercard.png
     :target: http://badge.fury.io/py/clippercard
 
-.. image:: https://pypip.in/d/clippercard/badge.png
-        :target: https://crate.io/packages/clippercard/
-        
-.. image:: https://pypip.in/license/vxapi/badge.png
-        :target: ./LICENSE
 
 ``clippercard`` is an unofficial web API to clippercard.com, written in Python.
 
@@ -26,8 +21,6 @@ I enjoy the actual user experience of ClipperCard on buses and trains. My compla
 As an advocate for data accessibility, I believe our dollars, our votes, our voices and our actions can nudge institutions in the direction we'd like them to go. At Bay Area's `Metropolitan Transportation Commission <http://www.mtc.ca.gov/about_mtc/staff_contacts.htm>`_, I am sure there are a lot of great people doing good work to the best of their ability, and within the context of prioritization, organizational structure and resources available to them.
 
 I encourage the staff of MTA reading this project to see this effort as a nudge for a public and official API. The moment they put up an API that obsoletes this project, I will happily direct followers to the official solution. If you'd like them to increase attention to data accessibility, you can send them an email at info@mtc.ca.gov and tell them I sent you.
-
-If you'd like to see more development, you can `support this project on Gittip <https://www.gittip.com/anthonywu/>`_
 
 Features
 --------
@@ -78,8 +71,8 @@ You also get a super convenient command line binary ``clippercard``::
     $ clippercard summary
 
     +---------+-------------------------------------------+
-    |    name | ANTHONY WU                                |
-    |   email | anthonywu@example.com                     |
+    |    name | JOHN SMITH                                |
+    |   email | jsmith@example.com                        |
     | address | 1 Main St, San Francisco, CA 94103        |
     |   phone | 415-555-5555                              |
     +---------+-------------------------------------------+
@@ -95,7 +88,7 @@ You also get a super convenient command line binary ``clippercard``::
 If you wish to use clippercard without specifying username/password on the CLI, create a file ``~/.clippercardrc`` with this format::
 
     [default]
-    username = anthonywu@example.com
+    username = jsmith@example.com
     password = superseekrit
 
 You may toggle accounts via the ``--account`` flag on the command line to access one of several configs in the file::
@@ -104,20 +97,24 @@ You may toggle accounts via the ``--account`` flag on the command line to access
     username = <replace_with_your_email>
     password = <replace_with_your_password>
     
-    [wife]
+    [spare]
     username = <replace_with_login_email>
     password = <replace_with_login_password>
     
-The ``wife`` credentials can then be accessed via::
+The ``spare`` credentials can then be accessed via::
 
-    $ clippercard summary --account=wife
+    $ clippercard summary --account=spare
 
 Contribute
 ----------
 
-#. fork the repo
-#. make your changes
-#. follow local style consistency, then PEP8
-#. run pyflakes/frosted on your diffs
+#. fork the repo to your personal GitHub account
+#. make your changes in your repo
+#. for Python source, follow local style consistency and PEP8
+#. run `pyflakes`/`frosted` on your diffs
 #. add unit tests, make sure they pass =)
-#. send me a pull request w/ explanation of design decisions
+#. remember to bump the version number wherever applies
+#. add a new line for your revision to `CHANGES.txt` describing your change
+#. send a pull request to https://github.com/clippercard/clippercard-python w/ explanation of problem statement and design decisions
+#. respond to all pull request code review requests in your branch and submit the requested changes in new commits
+#. communicate with the maintainers to merge the finalized pull request and publish your changes

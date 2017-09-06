@@ -1,3 +1,6 @@
+v0.3.5, 2014-09-06 remove unsupported badges from README file
+v0.3.4, 2014-09-06 README fixes, no-op on functionality
+v0.3.3, 2014-09-05 Fixed html parser errors (thanks @markmark1)
 v0.3.2, 2014-05-01 Update configparser lib version to 3.5.0b2
 v0.3.1, 2014-03-16 Update configparser lib version. PyPi version ref had stopped working
 v0.3.0, 2014-03-03 CLI uses prettytable lib for more readable display
