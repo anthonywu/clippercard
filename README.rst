@@ -4,11 +4,6 @@
 .. image:: https://badge.fury.io/py/clippercard.png
     :target: http://badge.fury.io/py/clippercard
 
-.. image:: https://pypip.in/d/clippercard/badge.png
-        :target: https://crate.io/packages/clippercard/
-        
-.. image:: https://pypip.in/license/vxapi/badge.png
-        :target: ./LICENSE
 
 ``clippercard`` is an unofficial web API to clippercard.com, written in Python.
 
@@ -106,7 +101,7 @@ You may toggle accounts via the ``--account`` flag on the command line to access
     username = <replace_with_login_email>
     password = <replace_with_login_password>
     
-The `spare` credentials can then be accessed via::
+The ``spare`` credentials can then be accessed via::
 
     $ clippercard summary --account=spare
 
