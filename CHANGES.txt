@@ -1,3 +1,4 @@
+v0.4.0, 2017-10-02 added support for CalTrain Monthly Passes
 v0.3.5, 2014-09-06 remove unsupported badges from README file
 v0.3.4, 2014-09-06 README fixes, no-op on functionality
 v0.3.3, 2014-09-05 Fixed html parser errors (thanks @markmark1)
