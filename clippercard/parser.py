@@ -129,10 +129,11 @@ def parse_card_products(card_soup):
         for value_node in blings:
             name = list(value_node.previous_siblings)[1].get_text().strip(':')
             products.append(CardProduct(name=name, value=value_node.get_text()))
-        caltrain = card_section.find_all('div', text=re.compile('^Caltrain'))
+        caltrain = card_section.find_all('div', text=re.compile('^Valid till'))
         for value_train in caltrain:
-            name = value_train.get_text()
-            products.append(CardProduct(name=name, value=''))
+            name = list(value_train.previous_siblings)[1].get_text().strip(':')
+            value_time = value_train.get_text()
+            products.append(CardProduct(name=name, value=value_time))
         section_products.append(products)
     return section_products
 
