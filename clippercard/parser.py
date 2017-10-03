@@ -129,6 +129,10 @@ def parse_card_products(card_soup):
         for value_node in blings:
             name = list(value_node.previous_siblings)[1].get_text().strip(':')
             products.append(CardProduct(name=name, value=value_node.get_text()))
+        caltrain = card_section.find_all('div', text=re.compile('^Caltrain'))
+        for value_train in caltrain:
+            name = value_train.get_text()
+            products.append(CardProduct(name=name, value=''))
         section_products.append(products)
     return section_products
 
