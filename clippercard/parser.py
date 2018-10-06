@@ -142,8 +142,8 @@ def parse_cards(account_page_content):
     """
     Parse card metadata and product balances from /ClipperCard/dashboard.jsf
     """
-    begin = account_page_content.index('<!--YOUR CLIPPER CARDS-->')
-    end = account_page_content.index('<!--END YOUR CLIPPER CARDS-->')
+    begin = account_page_content.index(b'<!--YOUR CLIPPER CARDS-->')
+    end = account_page_content.index(b'<!--END YOUR CLIPPER CARDS-->')
     card_soup = bs4.BeautifulSoup(account_page_content[begin:end], "html.parser")
     serial_numbers = find_values(card_soup, 'Serial Number:', get_next_sibling_text)
     nicknames = find_values(card_soup, 'Card Nickname:', get_inner_display_text)
@@ -151,6 +151,6 @@ def parse_cards(account_page_content):
     statuses = find_values(card_soup, 'Status:', get_next_sibling_text)
     products = parse_card_products(card_soup)
     cards = []
-    for sn, nn, tp, st, pd in itertools.izip(serial_numbers, nicknames, types, statuses, products):
+    for sn, nn, tp, st, pd in zip(serial_numbers, nicknames, types, statuses, products):
         cards.append(Card(serial_number=sn, nickname=nn, type=tp, status=st, products=pd))
     return cards
