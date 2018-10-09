@@ -1,3 +1,4 @@
+v0.4.1, 2018-10-08 Python 3.x fixes, thanks to http://github.com/timroesner
 v0.4.0, 2017-10-02 added support for CalTrain Monthly Passes
 v0.3.5, 2014-09-06 remove unsupported badges from README file
 v0.3.4, 2014-09-06 README fixes, no-op on functionality
