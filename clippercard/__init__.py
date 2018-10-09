@@ -22,4 +22,4 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import clippercard.client as client
 Session = client.ClipperCardWebSession
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
