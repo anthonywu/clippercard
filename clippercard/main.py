@@ -68,7 +68,7 @@ def main():
         if args['summary']:
             print(clippercard.porcelain.tabular_output(session.user_profile, session.cards))
     except (clippercard.client.ClipperCardError, ClipperCardCommandError) as e:
-        sys.exit(e.message)
+        sys.exit(str(e))
 
 
 if __name__ == '__main__':

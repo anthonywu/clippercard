@@ -26,6 +26,7 @@ setup(
         'configparser>=3.5.0,<4.0',
         'docopt>=0.6.1,<1.0',
         'PrettyTable>=0.7.2',
-        'requests>=2.2.1,<3.0'
+        'requests>=2.2.1,<3.0',
+        'six>=1.12.0'
     ],
 )
