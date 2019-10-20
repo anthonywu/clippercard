@@ -163,10 +163,10 @@ def parse_cards(account_page_content, debug_mode=('CLIPPERCARD_DEBUG' in os.envi
     Parse card metadata and product balances from /ClipperCard/dashboard.jsf
     """
     if debug_mode:
-        dump_file = './most_recent_account_page.html'
+        dump_file = '{}/most_recent_account_page.html'.format(tempfile.gettempdir())
         with open(dump_file, 'wb') as temp_dump:
             temp_dump.write(account_page_content)
-            logger.info("debug mode on - output saved in {}".format(dump_file))
+            print("CLIPPERCARD_DEBUG - account page HTML saved in {}".format(dump_file))
 
     begin = account_page_content.index(b'<!--YOUR CLIPPER CARDS-->')
     end = account_page_content.index(b'<!--END YOUR CLIPPER CARDS-->')
