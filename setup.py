@@ -6,12 +6,12 @@ except ImportError:
 
 setup(
     name='clippercard',
-    version='0.4.1',
-    author='Unofficial ClipperCard API devs',
+    version='0.5.0',
+    author='Your friendly neighborhood transit rider-hackers',
     author_email='goldengate88@systemfu.com',
-    packages=['clippercard'],
-    package_dir = {'clippercard':'clippercard'},
-    entry_points = {
+    packages=['clippercard', 'tests'],
+    package_dir={'clippercard': 'clippercard'},
+    entry_points={
         'console_scripts': [
             'clippercard = clippercard.main:main',
         ]

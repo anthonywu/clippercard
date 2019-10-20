@@ -22,6 +22,7 @@ import clippercard
 import clippercard.porcelain
 import configparser
 import docopt
+import logging
 import os.path
 import sys
 
@@ -72,4 +73,6 @@ def main():
 
 
 if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=logging.INFO)
     main()

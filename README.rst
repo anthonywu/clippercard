@@ -112,7 +112,7 @@ Contribute
 #. make your changes in your repo
 #. for Python source, follow local style consistency and PEP8
 #. run `pyflakes`/`frosted` on your diffs
-#. add unit tests, make sure they pass =)
+#. add unit tests, make sure they pass (just run `pytest` 😎)
 #. remember to bump the version number wherever applies
 #. add a new line for your revision to `CHANGES.txt` describing your change
 #. send a pull request to https://github.com/clippercard/clippercard-python w/ explanation of problem statement and design decisions
