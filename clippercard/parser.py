@@ -22,7 +22,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import bs4
 import collections
 import itertools
+import logging
+import os
 import re
+import tempfile
+
+
+logger = logging.getLogger(__name__)
+
 
 # === Simple Objects for ClipperCard data ===
 
@@ -110,11 +117,24 @@ def parse_profile_data(account_page_content):
     profile_data = soup.find('div', attrs={'class': 'profileData'})
     fields = profile_data.find_all('div', attrs={'class': 'fieldData'})
     values = [cleanup_whitespace(f.get_text()) for f in fields]
+
+    for ignorable in ['Yes', 'No', 'Edit My Profile Information']:
+        if ignorable in values:        
+            values.remove(ignorable)  # the value for "Email Updates" option
+
+    try:
+        name, email, addr1, addr2, city_state, zipcode, phone = values
+        addr_fields = [addr1, addr2, city_state, zipcode]
+    except ValueError:
+        # try to unpack a 6-tuple of values, probably without addr2
+        name, email, addr1, city_state, zipcode, phone = values
+        addr_fields = [addr1, city_state, zipcode]
+
     return Profile(
-        name=values[0],
-        email=values[1],
-        address=' '.join(values[2:5]),
-        phone=values[5]
+        name=name.strip(),
+        email=email.strip(),
+        address=' '.join((x.strip() for x in addr_fields)),
+        phone=phone.strip()
         )
 
 
@@ -138,10 +158,16 @@ def parse_card_products(card_soup):
     return section_products
 
 
-def parse_cards(account_page_content):
+def parse_cards(account_page_content, debug_mode=('CLIPPERCARD_DEBUG' in os.environ)):
     """
     Parse card metadata and product balances from /ClipperCard/dashboard.jsf
     """
+    if debug_mode:
+        dump_file = '{}/most_recent_account_page.html'.format(tempfile.gettempdir())
+        with open(dump_file, 'wb') as temp_dump:
+            temp_dump.write(account_page_content)
+            print("CLIPPERCARD_DEBUG - account page HTML saved in {}".format(dump_file))
+
     begin = account_page_content.index(b'<!--YOUR CLIPPER CARDS-->')
     end = account_page_content.index(b'<!--END YOUR CLIPPER CARDS-->')
     card_soup = bs4.BeautifulSoup(account_page_content[begin:end], "html.parser")

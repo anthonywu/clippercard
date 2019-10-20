@@ -22,6 +22,7 @@ import clippercard
 import clippercard.porcelain
 import configparser
 import docopt
+import logging
 import os.path
 import sys
 
@@ -68,8 +69,10 @@ def main():
         if args['summary']:
             print(clippercard.porcelain.tabular_output(session.user_profile, session.cards))
     except (clippercard.client.ClipperCardError, ClipperCardCommandError) as e:
-        sys.exit(e.message)
+        sys.exit(str(e))
 
 
 if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=logging.INFO)
     main()

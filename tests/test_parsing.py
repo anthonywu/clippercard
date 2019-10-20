@@ -27,20 +27,29 @@ import unittest
 class TestParser(unittest.TestCase):
 
     def setUp(self):
-        test_file = os.path.join(os.path.dirname(__file__), '../tests/data/dashboard.html')
-        with open(test_file) as f:
-            self.test_content = f.read()
+        test_file_1 = os.path.join(os.path.dirname(__file__), '../tests/data/dashboard_user_1.html')
+        with open(test_file_1, 'rb') as f:
+            self.test_content_1 = f.read()
+        test_file_2 = os.path.join(os.path.dirname(__file__), '../tests/data/dashboard_user_2.html')
+        with open(test_file_2, 'rb') as f:
+            self.test_content_2 = f.read()
 
-    def test_profile(self):
-        profile = parser.parse_profile_data(self.test_content)
+    def test_profile_1(self):
+        profile = parser.parse_profile_data(self.test_content_1)
         self.assertEqual('John Smith', profile.name)
         self.assertEqual('jsmith@example.org', profile.email)
         self.assertEqual('1 Main St SAN FRANCISCO, CA 94103', profile.address)
         self.assertEqual('415-555-5555', profile.phone)
 
-    def test_cards(self):
-        card1, card2 = parser.parse_cards(self.test_content)
-        print card1, card2
+    def test_profile_2(self):
+        profile = parser.parse_profile_data(self.test_content_2)
+        self.assertEqual('Mr. FIRSTNAME LASTNAME', profile.name)
+        self.assertEqual('EMAIL@FOO.BAR', profile.email)
+        self.assertEqual('123, Whatever street Apt 1234 San Francisco, CA 94103', profile.address)
+        self.assertEqual('415-555-5555', profile.phone)
+
+    def test_cards_1(self):
+        card1, card2 = parser.parse_cards(self.test_content_1)
         self.assertEqual('111', card1.serial_number)
         self.assertEqual('Golden Gate Bridge Limited Edition', card1.nickname)
         self.assertEqual('ADULT', card1.type)

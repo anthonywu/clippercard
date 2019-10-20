@@ -20,6 +20,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 import prettytable
+import six
+
 
 def tabular_output(user_profile, cards):
     """
@@ -28,7 +30,7 @@ def tabular_output(user_profile, cards):
     pt = prettytable.PrettyTable(['name', 'value'], header=False)
     pt.align['name'] = 'r'
     pt.align['value'] = 'l'
-    for k, v in user_profile._asdict().iteritems():
+    for k, v in six.iteritems(user_profile._asdict()):
         pt.add_row([k, v])
 
     ct = prettytable.PrettyTable(['Card', 'Serial', 'Type', 'Status', 'Product', 'Value'])
