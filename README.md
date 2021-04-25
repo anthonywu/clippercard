@@ -70,11 +70,11 @@ $ clippercard summary
 +---+---------------------------+------------+-------+--------+-------------------------+
 | # | Name                      | Serial     | Type  | Status | Products                |
 +---+---------------------------+------------+-------+--------+-------------------------+
-| 1 | Primary, card #1212038022 | 1212000130 | ADULT | Active | Cash Value: $195.00     |
+| 1 | Primary, card #2021234134 | 2021234134 | ADULT | Active | Cash Value: $195.00     |
 |   |                           |            |       |        | Current Passes: None    |
 |   |                           |            |       |        | Pending Passes: None    |
 |   |                           |            |       |        | Reload: $255 - Autoload |
-| 2 | Backup, card #1212046165  | 1212000120 | ADULT | Active | Cash Value: $200.00     |
+| 2 | Backup, card #2021234156  | 2021234156 | ADULT | Active | Cash Value: $200.00     |
 |   |                           |            |       |        | Current Passes: None    |
 |   |                           |            |       |        | Pending Passes: None    |
 |   |                           |            |       |        | Reload: $200 - Autoload |
@@ -108,16 +108,19 @@ The `other` credentials can then be accessed via::
 $ clippercard summary --account=other
 ```
 
+# More examples
+
+If you have a transit pass that isn't recognized by this tool, you can privately share a copy of your account page `view-source:` with the maintainer.
+
 # Contribute
 
 1. fork the repo to your personal GitHub account
 1. make your changes in your repo
 1. for Python source, follow local style consistency and PEP8
-1. run `pyflakes`/`frosted` on your diffs
+1. run `pylint` on your diffs
 1. add unit tests, make sure they pass (just run `pytest` 😎)
 1. remember to bump the version number wherever applies
 1. add a new line for your revision to `CHANGES.txt` describing your change
-1. send a pull request to https://github.com/clippercard/clippercard-python w/ explanation of problem statement and design decisions
+1. send a pull request to https://github.com/clippercard/clippercard-python w/problem or goal statement and implementation details
 1. respond to all pull request code review requests in your branch and submit the requested changes in new commits
 1. communicate with the maintainers to merge the finalized pull request and publish your changes
-h
