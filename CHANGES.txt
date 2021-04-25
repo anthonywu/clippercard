@@ -1,3 +1,4 @@
+v202104.25.1, 2021-04-25 lib requirements update to more recent, more secure revisions
 v202104.24.1, 2021-04-24 Major update to match new clippercard.com site
 v0.4.1, 2018-10-08 Python 3.x fixes, thanks to http://github.com/timroesner
 v0.4.0, 2017-10-02 added support for CalTrain Monthly Passes
