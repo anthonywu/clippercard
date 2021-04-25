@@ -1,5 +1,5 @@
 """
-Copyright (c) 2012-2017 (https://github.com/clippercard/clippercard-python)
+Copyright (c) 2012-2021 (https://github.com/clippercard/clippercard-python)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -20,32 +20,42 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 import prettytable
-import six
 
 
 def tabular_output(user_profile, cards):
     """
     Pretty prints a user profile and its associated cards and products.
     """
-    pt = prettytable.PrettyTable(['name', 'value'], header=False)
-    pt.align['name'] = 'r'
-    pt.align['value'] = 'l'
-    for k, v in six.iteritems(user_profile._asdict()):
-        pt.add_row([k, v])
+    profile_table = prettytable.PrettyTable(["name", "value"], header=False)
+    profile_table.align["name"] = "r"
+    profile_table.align["value"] = "l"
+    for label, value in user_profile._asdict().items():
+        profile_table.add_row([label, value])
 
-    ct = prettytable.PrettyTable(['Card', 'Serial', 'Type', 'Status', 'Product', 'Value'])
-    for col in ct.align.keys():
-        ct.align[col] = 'l'
-    for c in cards:
-        for p in c.products:
-            ct.add_row([
-                c.nickname,
-                c.serial_number,
-                c.type,
-                c.status,
-                p.name,
-                p.value
-                ])
+    if cards:
+        card_table = prettytable.PrettyTable(
+            ["#", "Name", "Serial", "Type", "Status", "Products"]
+        )
+        for col in card_table.align.keys():
+            card_table.align[col] = "l"
+        for i, card in enumerate(cards, 1):
+            card_table.add_row(
+                [
+                    i,
+                    card.nickname,
+                    card.serial_number,
+                    card.type,
+                    card.status,
+                    "\n".join((str(_) for _ in card.products + card.features)),
+                ]
+            )
+    else:
+        card_table = None
 
-    output = '\n'.join([pt.get_string(), ct.get_string()])
+    output = "\n".join(
+        [
+            profile_table.get_string(),
+            card_table.get_string() if card_table else "No cards registered",
+        ]
+    )
     return output

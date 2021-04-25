@@ -1,5 +1,5 @@
 """
-Copyright (c) 2012-2017 (https://github.com/clippercard/clippercard-python)
+Copyright (c) 2012-2021 (https://github.com/clippercard/clippercard-python)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -20,6 +20,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 import clippercard.client as client
+
 Session = client.ClipperCardWebSession
 
-__version__ = '0.4.1'
+__version__ = "0.4.1"

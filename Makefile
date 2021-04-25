@@ -3,8 +3,11 @@ virtualenv:
 	virtualenv --no-site-packages ~/.virtualenvs/clippercard
 	bash -c 'source ~/.virtualenvs/clippercard/bin/activate && pip install -r ./requirements.txt'
 
-upload-test:
-	python setup.py sdist upload -r pypitest
+build-dist:
+	rm -rf ./dist && python setup.py sdist
 
-upload-live:
-	python setup.py sdist upload -r pypi
+upload-test: build-dist
+	twine upload -r pypitest dist/*
+
+upload-live: build-dist
+	twine upload -r pypi dist/*

@@ -6,7 +6,7 @@
 
 # Why
 
-Not only is the [clippercard web site](https://www.clippercard.com) a total UX/UI disaster, its behind-the-scene's HTML structure and HTTP protocol is a complete exercise in palmface. This library aims to provide an unofficial but sensible interface to the official web service.
+Not only is the [clippercard web site](https://www.clippercard.com) a inaccessible by API, its behind-the-scene's HTML structure and HTTP protocol is not semantically structured. This library aims to provide an unofficial but sensible interface to the official web service.
 
 # Project Goal
 
@@ -22,7 +22,7 @@ I encourage the staff of MTA reading this project to see this effort as a nudge 
 - Multiple cards' data
 - For each card, multiple products and balances
 
-I don't have access to all products loadable on the ClipperCard, so transit product variant support is limited to what I personally use for now. If you'd like me to add support for your product, send me the page source from your account home page: https://www.clippercard.com/ClipperCard/dashboard.jsf
+I don't have access to all products loadable on the ClipperCard, so transit product variant support is limited to what I personally use for now. If you'd like me to add support for your product, send me the page source from your account home page: https://www.clippercard.com/ClipperWeb/account.html
 
 # Security and Privacy
 
@@ -48,7 +48,7 @@ Usage
 ```python
 import clippercard
 session = clippercard.Session('username', 'password')
-print(session.user_profile)
+print(session.profile_info)
 for c in session.cards:
     print(c)
 ```
@@ -58,19 +58,27 @@ You also get a super convenient command line binary ``clippercard``::
 ```sh
 $ clippercard -h # see usage information
 $ clippercard summary
-+---------+-------------------------------------------+
-|    name | JOHN SMITH                                |
-|   email | jsmith@example.com                        |
-| address | 1 Main St, San Francisco, CA 94103        |
-|   phone | 415-555-5555                              |
-+---------+-------------------------------------------+
-+---------------+------------+-------+--------+----------------+--------+
-| Card          | Serial     | Type  | Status | Product        | Value  |
-+---------------+------------+-------+--------+----------------+--------+
-| GGB75         | 1234567890 | ADULT | Active | BART HVD 60/64 | $16.20 |
-| GGB75         | 1234567890 | ADULT | Active | Cash value     | $32.40 |
-| Standard Card | 1234567891 | ADULT | Active | Cash value     | $64.80 |
-+---------------+------------+-------+--------+----------------+--------+
++-----------------+------------------------------------------------+
+|            name | Golden Gate Hacker                             |
+|           email | goldengate88@systemfu.com                      |
+| mailing_address | 1 Main St, San Francisco, CA 94105             |
+|           phone | 415-555-5555                                   |
+|       alt_phone | 650-555-5555                                   |
+| primary_payment | Mastercard ending in 1234                      |
+|  backup_payment | Amex ending in 9876                            |
++-----------------+------------------------------------------------+
++---+---------------------------+------------+-------+--------+-------------------------+
+| # | Name                      | Serial     | Type  | Status | Products                |
++---+---------------------------+------------+-------+--------+-------------------------+
+| 1 | Primary, card #1212038022 | 1212000130 | ADULT | Active | Cash Value: $195.00     |
+|   |                           |            |       |        | Current Passes: None    |
+|   |                           |            |       |        | Pending Passes: None    |
+|   |                           |            |       |        | Reload: $255 - Autoload |
+| 2 | Backup, card #1212046165  | 1212000120 | ADULT | Active | Cash Value: $200.00     |
+|   |                           |            |       |        | Current Passes: None    |
+|   |                           |            |       |        | Pending Passes: None    |
+|   |                           |            |       |        | Reload: $200 - Autoload |
++---+---------------------------+------------+-------+--------+-------------------------+
 ```
 
 If you wish to use clippercard without specifying username/password on the CLI, create a file ``~/.clippercardrc`` with this format::
@@ -78,7 +86,7 @@ If you wish to use clippercard without specifying username/password on the CLI, 
 
 ```ini
 [default]
-username = jsmith@example.com
+username = goldengate88@example.com
 password = superseekrit
 ```
 
@@ -112,3 +120,4 @@ $ clippercard summary --account=other
 1. send a pull request to https://github.com/clippercard/clippercard-python w/ explanation of problem statement and design decisions
 1. respond to all pull request code review requests in your branch and submit the requested changes in new commits
 1. communicate with the maintainers to merge the finalized pull request and publish your changes
+h
