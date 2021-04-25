@@ -1,5 +1,5 @@
 """
-Copyright (c) 2012-2017 (https://github.com/clippercard/clippercard-python)
+Copyright (c) 2012-2021 (https://github.com/clippercard/clippercard-python)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -22,109 +22,108 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # === imports ===
 
 import bs4
-import clippercard.parser as parser
 import requests
+import clippercard.parser as parser
 
 
 # === Error Classes ===
 
+
 class ClipperCardError(Exception):
-    # base error for client
-    pass
+    """base error for client"""
 
 
 class ClipperCardAuthError(ClipperCardError):
-    # unable to login with credentials
-    pass
+    """unable to login with provided credentials"""
 
 
 class ClipperCardContentError(ClipperCardError):
-    # unable to recognize web content
-    pass
+    """unable to recognize and parse web content"""
 
 
 # === ClipperCardWebSession ===
-
-def soupify(method, *method_pargs, **method_kwargs):
-    # helper: makes the method call, puts content in BeautifulSoup
-    resp = method(*method_pargs, **method_kwargs)
-    soup = bs4.BeautifulSoup(resp.content, "html.parser")
-    return resp, soup
 
 
 class ClipperCardWebSession(requests.Session):
     """
     A stateful session for clippercard.com
     """
-    LOGIN_URL = 'https://www.clippercard.com/ClipperCard/loginFrame.jsf'
-    BALANCE_URL = 'https://www.clippercard.com/ClipperWeb/cardValue.do?cardNumber=%s'
+
+    LOGIN_URL = "https://www.clippercard.com/ClipperWeb/account"
+    BALANCE_URL = "https://www.clippercard.com/ClipperWeb/account.html"
     HEADERS = {
-        'FAKE_USER_AGENT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
-        }
+        "FAKE_USER_AGENT": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/90.0.4430.85 Safari/537.36"
+        )
+    }
 
     def __init__(self, username=None, password=None):
         requests.Session.__init__(self)
         self.headers.update(self.HEADERS)
-        self._dashboard_content = None
+        self._account_resp_soup = None
         if username and password:
             self.login(username, password)
 
     def login(self, username, password):
         """
-        Mimicks user login via /ClipperCard/loginFrame.jsf
+        Mimicks user login form submission
         """
-        resp_login, soup_login = soupify(self.get, self.LOGIN_URL)
-        form_login = soup_login.find('form')
-        if not form_login:
-            raise ClipperCardContentError('Cannot find login form on login page')
-        login_inputs = form_login.find_all('input')
+        login_landing_resp = self.get(self.LOGIN_URL)
 
-        post_data = {
-            'javax.faces.source': 'j_idt13:submitLogin',
-            'javax.faces.partial.event': 'click',
-            'javax.faces.partial.execute ': ':submitLogin j_idt13:username j_idt13:password',
-            'javax.faces.partial.render': 'j_idt13:err',
-            'javax.faces.behavior.event': 'action',
-            'javax.faces.partial.ajax': 'true'
-        }
-
-        # gather the dynamic post-data from the form, but replace the username/password pair
-        for each in login_inputs:
-            name, value = (each.get('name'), each.get('value'))
-            if name.endswith('username'):
-                value = username
-            elif name.endswith('password'):
-                value = password
-            post_data[name] = value
-
-        resp, soup = soupify(self.post, self.LOGIN_URL, data=post_data)
-        invalid_creds_span = soup.find('span', text='Invalid Credentials')
-        if invalid_creds_span:
-            raise ClipperCardAuthError('Invalid login info for %s' % username)
+        if login_landing_resp.ok:
+            req_data = {
+                "_csrf": parser.parse_login_form_csrf(login_landing_resp.text),
+                "email": username,
+                "password": password,
+            }
         else:
-            self._dashboard_content = resp.content
-        return resp
+            raise ClipperCardError(
+                "ClipperCard.com site may be down right now. Try again later."
+            )
+
+        login_resp = self.post(self.LOGIN_URL, data=req_data)
+        if not login_resp.ok:
+            raise ClipperCardError(
+                "ClipperCard.com site may be down right now. Try again later."
+            )
+
+        resp_soup = bs4.BeautifulSoup(login_resp.text, "html.parser")
+        possible_error_msg = resp_soup.find(
+            "div", attrs={"class": "form-error-message"}
+        )
+        if possible_error_msg is not None:
+            raise ClipperCardAuthError(
+                parser.cleanup_whitespace(possible_error_msg.get_text())
+            )
+
+        # assume account page is reachable now
+        self._account_resp_soup = resp_soup
+        return login_resp
 
     @property
-    def user_profile(self):
+    def profile_info(self):
         """
         Returns *Profile* namedtuples associated with logged in user
         """
-        if not self._dashboard_content:
-            raise ClipperCardError('Must login first')
-        return parser.parse_profile_data(self._dashboard_content)
+        if not self._account_resp_soup:
+            raise ClipperCardError("Must login first")
+        return parser.parse_profile_info(self._account_resp_soup)
 
     @property
     def cards(self):
         """
         Returns list of *Card* namedtuples associated with logged in user
         """
-        if not self._dashboard_content:
-            raise ClipperCardError('Must login first')
-        return parser.parse_cards(self._dashboard_content)
+        if not self._account_resp_soup:
+            raise ClipperCardError("Must login first")
+        return parser.parse_cards(self._account_resp_soup)
 
-    def get_summary(self):
-        lines = [str(self.user_profile), '-' * 40]
-        for index, card in enumerate(self.cards, 1):
-            lines.append('Card {0}: {1}'.format(index, str(card)))
-        return '\n'.join(lines)
+    def print_summary(self):
+        """return a text summary of the account"""
+        print(self.profile_info)
+        print("=" * 80)
+        for card in sorted(self.cards, key=lambda card: card.serial_number):
+            print(card)
+            print("-" * 80)
