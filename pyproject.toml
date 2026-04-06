@@ -1,0 +1,63 @@
+[build-system]
+requires = ["uv_build>=0.11.3,<0.12"]
+build-backend = "uv_build"
+
+[project]
+name = "clippercard"
+version = "202604.5.1"
+description = "Unofficial Python API for Clipper Card (transportation pass used in the SF Bay Area)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Your friendly neighborhood transit rider-hackers", email = "noreply@github.com" },
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "beautifulsoup4>=4.9.0",
+    "rich>=13.0.0",
+    "requests>=2.25.0,<3.0",
+    "urllib3>=1.26.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.4.0",
+    "build>=1.0.0",
+    "twine>=5.0.0",
+    "nox>=2024.3.2",
+]
+
+[project.scripts]
+clippercard = "clippercard.main:main"
+
+[project.urls]
+Homepage = "https://github.com/clippercard/clippercard-python"
+Repository = "https://github.com/clippercard/clippercard-python"
+
+[tool.uv]
+package = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.uv.build-backend]
+module-root = ""

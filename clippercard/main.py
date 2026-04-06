@@ -1,29 +1,15 @@
 """
-ClipperCard Client
-
-Usage:
-  clippercard (-h | --version)
-  clippercard summary {auth_args}
-
-Options:
-  -h --help             Show this screen.
-  -v --version          Show version.
-  --account=<acct>      Optional, account section name in ~/.clippercardrc config [Default: default].
-  --config=<cfg>        Optional, account login config file path [Default: ~/.clippercardrc].
-  --username=<user>     Optional, login username if not using config file.
-  --password=<pass>     Optional, login password if not using config file.
+ClipperCard Client - CLI entry point
 """
 
-__doc__ = __doc__.format(
-    auth_args="([--account=<acct>] [--config=<cfg>] | [ (--username=<user> --password=<pass>) ])"
-)
-
+import argparse
 import configparser
 import logging
 import os
+import re
 import sys
+from pathlib import Path
 
-import docopt
 import clippercard
 import clippercard.porcelain
 
@@ -32,51 +18,129 @@ class ClipperCardCommandError(Exception):
     pass
 
 
+def _init_config_file(config_file_path):
+    """Initialize a config file with template structure."""
+    os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
+    template = """\
+[default]
+username = <replace_with_your_email>
+password = <replace_with_your_password>
+"""
+    with open(config_file_path, "w") as f:
+        f.write(template)
+    print(f"Created config file: {config_file_path}")
+
+
 def _get_client_auth(args):
     """
     Finds/parses the username and password from either the args or a config file.
 
     :returns: a tuple of (username, password)
     """
-    username, password = args["--username"], args["--password"]
+    username, password = args.username, args.password
     if not (username and password):
-        config_file_path = os.path.expanduser(args["--config"])
+        config_file_path = os.path.expanduser(args.config)
         if not os.path.exists(config_file_path):
-            raise ClipperCardCommandError(
-                "Login config file {0} does not exist.".format(config_file_path)
-            )
-        try:
-            parser = configparser.SafeConfigParser()
-            parser.read(config_file_path)
-            section = args["--account"]
-            username, password = parser.get(section, "username"), parser.get(
-                section, "password"
-            )
-        except configparser.NoSectionError:
-            raise ClipperCardCommandError(
-                "Account config section {0} is not found in {1}".format(
-                    repr(args["--account"]), config_file_path
+            response = input(f"Config file {config_file_path} does not exist. Create it? (y/n): ").strip().lower()
+            if response == "y":
+                _init_config_file(config_file_path)
+                raise ClipperCardCommandError(
+                    f"Config file created. Please edit {config_file_path} and add your credentials."
                 )
-            )
+            else:
+                raise ClipperCardCommandError(
+                    f"Login config file {config_file_path} does not exist. "
+                    "Use --username and --password flags or create a config file."
+                )
+        try:
+            parser = configparser.ConfigParser()
+            parser.read(config_file_path)
+            section = args.account
+            username, password = parser.get(section, "username"), parser.get(section, "password")
+        except configparser.NoSectionError as err:
+            raise ClipperCardCommandError(
+                f"Account config section {args.account!r} is not found in {config_file_path}"
+            ) from err
     return username, password
 
 
+def _cookie_jar_path_for_account(account, cookie_jar_path=None):
+    """
+    Returns the cookie jar path for a config section.
+
+    The default account keeps using auth.cookies for backwards compatibility.
+    Other accounts get a section-specific cookie jar so saved sessions do not
+    collide across profiles.
+    """
+    base_path = Path(cookie_jar_path).expanduser() if cookie_jar_path else clippercard.Session.COOKIE_JAR_PATH
+    if not account or account == "default":
+        return base_path
+
+    safe_account = re.sub(r"[^A-Za-z0-9._-]+", "_", account).strip("._")
+    if not safe_account:
+        safe_account = "account"
+
+    if base_path.suffix:
+        cookie_name = f"{base_path.stem}.{safe_account}{base_path.suffix}"
+    else:
+        cookie_name = f"{base_path.name}.{safe_account}"
+    return base_path.with_name(cookie_name)
+
+
+def _build_parser():
+    parser = argparse.ArgumentParser(
+        prog="clippercard",
+        description="Unofficial CLI for Clipper Card (SF Bay Area transit pass)",
+    )
+    parser.add_argument("-v", "--version", action="version", version=clippercard.__version__)
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    summary = subparsers.add_parser("summary", help="Show account summary")
+    summary.add_argument("--debug", action="store_true", help="Enable debug logging")
+
+    auth_group = summary.add_argument_group("authentication")
+    auth_group.add_argument(
+        "--account",
+        default="default",
+        help="Account section name in config file (default: default)",
+    )
+    auth_group.add_argument(
+        "--config",
+        default="~/.config/clippercard/credentials.ini",
+        help="Account login config file path (default: ~/.config/clippercard/credentials.ini)",
+    )
+    auth_group.add_argument("--username", help="Login username (instead of config file)")
+    auth_group.add_argument("--password", help="Login password (instead of config file)")
+
+    return parser
+
+
 def main():
-    args = docopt.docopt(__doc__, version=clippercard.__version__)
-    if args["--version"]:
-        print(clippercard.__version__)
-        sys.exit(0)
+    parser = _build_parser()
+    args = parser.parse_args()
+
+    # Set up logging
+    log_level = logging.DEBUG if args.debug else logging.INFO
+    logging.basicConfig(level=log_level)
+
+    if not args.command:
+        parser.print_help()
+        sys.exit(1)
 
     try:
         username, password = _get_client_auth(args)
-        session = clippercard.Session(username, password)
-        if args["summary"]:
-            print(
-                clippercard.porcelain.tabular_output(
-                    session.profile_info, session.cards
-                )
-            )
-    except (clippercard.client.ClipperCardError, ClipperCardCommandError) as e:
+        session = clippercard.Session(
+            username,
+            password,
+            cookie_jar_path=_cookie_jar_path_for_account(args.account),
+        )
+        if args.command == "summary":
+            if session.reused_cookies:
+                print(f"Reusing saved cookies from {session.cookie_jar_path}")
+            print(clippercard.porcelain.tabular_output(session.profile_info, session.cards))
+    except (clippercard.client.ClipperCardError, ClipperCardCommandError, FileNotFoundError) as e:
         sys.exit(str(e))
 
 

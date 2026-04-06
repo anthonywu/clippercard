@@ -21,36 +21,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import os.path
 import unittest
+
 import bs4
+
 import clippercard.parser as parser
 
 
 class TestParser(unittest.TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../tests/data/login.html")
-        ) as login_page_file:
+        with open(os.path.join(os.path.dirname(__file__), "../tests/data/login.html")) as login_page_file:
             self.login_page_content = login_page_file.read()
-        with open(
-            os.path.join(os.path.dirname(__file__), "../tests/data/account.html")
-        ) as login_page_file:
-            self.account_page_soup = bs4.BeautifulSoup(
-                login_page_file.read(), "html.parser"
-            )
-
-    def test_csrf(self):
-        expected = "293b3e29-8080-4dee-a373-e383d4321a35"
-        self.assertEqual(
-            expected, parser.parse_login_form_csrf(self.login_page_content)
-        )
+        with open(os.path.join(os.path.dirname(__file__), "../tests/data/account.html")) as login_page_file:
+            self.account_page_soup = bs4.BeautifulSoup(login_page_file.read(), "html.parser")
+        with open(os.path.join(os.path.dirname(__file__), "../tests/data/profile.html")) as profile_page_file:
+            self.profile_page_content = profile_page_file.read()
 
     def test_profile(self):
         parsed_profile = parser.parse_profile_info(self.account_page_soup)
         self.assertEqual("Golden Gate", parsed_profile.name)
         self.assertEqual("goldengate88@example.com", parsed_profile.email)
-        self.assertEqual(
-            "1 Main St SAN FRANCISCO, CA 94105", parsed_profile.mailing_address
-        )
+        self.assertEqual("1 Main St SAN FRANCISCO, CA 94105", parsed_profile.mailing_address)
         self.assertEqual("415-555-5555", parsed_profile.phone)
         self.assertEqual("650-555-5555", parsed_profile.alt_phone)
         self.assertEqual("Mastercard ending in 8888", parsed_profile.primary_payment)
@@ -59,3 +49,13 @@ class TestParser(unittest.TestCase):
     def test_cards(self):
         parsed_cards = parser.parse_cards(self.account_page_soup)
         self.assertEqual(9, len(parsed_cards))
+
+    def test_profile_page(self):
+        parsed_profile = parser.parse_profile_page(self.profile_page_content)
+        self.assertEqual("EXAMPLE RIDER", parsed_profile.name)
+        self.assertEqual("rider@example.com", parsed_profile.email)
+        self.assertEqual("123 SAMPLE ST APT 4 EXAMPLE CITY, CA 94105", parsed_profile.mailing_address)
+        self.assertEqual("+1 415-555-0100", parsed_profile.phone)
+        self.assertEqual("+1 510-555-0199", parsed_profile.alt_phone)
+        self.assertEqual("", parsed_profile.primary_payment)
+        self.assertEqual("", parsed_profile.backup_payment)

@@ -19,43 +19,64 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import prettytable
+from io import StringIO
+
+from rich import box
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
+
+_CONSOLE_WIDTH = 1000
+
+
+def _render_table(table):
+    buffer = StringIO()
+    console = Console(
+        file=buffer,
+        force_terminal=False,
+        color_system=None,
+        width=_CONSOLE_WIDTH,
+    )
+    console.print(table)
+    return buffer.getvalue().rstrip()
 
 
 def tabular_output(user_profile, cards):
     """
     Pretty prints a user profile and its associated cards and products.
     """
-    profile_table = prettytable.PrettyTable(["name", "value"], header=False)
-    profile_table.align["name"] = "r"
-    profile_table.align["value"] = "l"
-    for label, value in user_profile._asdict().items():
-        profile_table.add_row([label, value])
+    output_parts = []
+
+    if user_profile:
+        profile_table = Table(show_header=False, box=box.ASCII)
+        profile_table.add_column("name", justify="right", no_wrap=True)
+        profile_table.add_column("value", justify="left", no_wrap=True)
+        for label, value in user_profile._asdict().items():
+            if value in (None, ""):
+                continue
+            profile_table.add_row(Text(str(label)), Text(str(value)))
+        if profile_table.row_count:
+            output_parts.append(_render_table(profile_table))
 
     if cards:
-        card_table = prettytable.PrettyTable(
-            ["#", "Name", "Serial", "Type", "Status", "Products"]
-        )
-        for col in card_table.align.keys():
-            card_table.align[col] = "l"
+        card_table = Table(box=box.ASCII)
+        card_table.add_column("#", justify="left", no_wrap=True)
+        card_table.add_column("Name", justify="left", no_wrap=True)
+        card_table.add_column("Serial", justify="left", no_wrap=True)
+        card_table.add_column("Type", justify="left", no_wrap=True)
+        card_table.add_column("Status", justify="left", no_wrap=True)
+        card_table.add_column("Products", justify="left", no_wrap=True)
         for i, card in enumerate(cards, 1):
             card_table.add_row(
-                [
-                    i,
-                    card.nickname,
-                    card.serial_number,
-                    card.type,
-                    card.status,
-                    "\n".join((str(_) for _ in card.products + card.features)),
-                ]
+                str(i),
+                Text(str(card.nickname)),
+                Text(str(card.serial_number)),
+                Text(str(card.type)),
+                Text(str(card.status)),
+                Text("\n".join(str(_) for _ in card.products + card.features)),
             )
-    else:
-        card_table = None
+        output_parts.append(_render_table(card_table))
+    elif cards is not None:
+        output_parts.append("No cards registered")
 
-    output = "\n".join(
-        [
-            profile_table.get_string(),
-            card_table.get_string() if card_table else "No cards registered",
-        ]
-    )
-    return output
+    return "\n".join(output_parts)
