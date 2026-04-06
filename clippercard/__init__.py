@@ -19,8 +19,13 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+from importlib.metadata import PackageNotFoundError, version
+
 import clippercard.client as client
 
 Session = client.ClipperCardWebSession
 
-__version__ = "0.4.1"
+try:
+    __version__ = version("clippercard")
+except PackageNotFoundError:
+    __version__ = "0.0.0-dev"

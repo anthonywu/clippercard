@@ -36,11 +36,15 @@ For now, this project is targeted at other software developers, who are capable 
 
 # Installation
 
-To install clippercard, simply:
+Install as a user-wide CLI tool via [uv](https://docs.astral.sh/uv/):
 
 ```sh
-$ pip install clippercard
+$ uv tool install clippercard
 ```
+
+`clippercard` requires Python 3.11 or newer.
+
+This makes the `clippercard` command available globally without activating a virtual environment.
 
 Usage
 -----
@@ -58,18 +62,18 @@ You also get a super convenient command line binary ``clippercard``::
 ```sh
 $ clippercard -h # see usage information
 $ clippercard summary
-+-----------------+------------------------------------------------+
-|            name | Golden Gate Hacker                             |
-|           email | goldengate88@systemfu.com                      |
-| mailing_address | 1 Main St, San Francisco, CA 94105             |
-|           phone | 415-555-5555                                   |
-|       alt_phone | 650-555-5555                                   |
-| primary_payment | Mastercard ending in 1234                      |
-|  backup_payment | Amex ending in 9876                            |
-+-----------------+------------------------------------------------+
-+---+---------------------------+------------+-------+--------+-------------------------+
++------------------------------------------------------+
+|            name | Golden Gate Rider                  |
+|           email | goldengate-rider@example.com       |
+| mailing_address | 1 Main St, San Francisco, CA 94105 |
+|           phone | 415-555-5555                       |
+|       alt_phone | 650-555-5555                       |
+| primary_payment | Mastercard ending in 1234          |
+|  backup_payment | Amex ending in 9876                |
++------------------------------------------------------+
++---------------------------------------------------------------------------------------+
 | # | Name                      | Serial     | Type  | Status | Products                |
-+---+---------------------------+------------+-------+--------+-------------------------+
+|---+---------------------------+------------+-------+--------+-------------------------|
 | 1 | Primary, card #2021234134 | 2021234134 | ADULT | Active | Cash Value: $195.00     |
 |   |                           |            |       |        | Current Passes: None    |
 |   |                           |            |       |        | Pending Passes: None    |
@@ -78,10 +82,10 @@ $ clippercard summary
 |   |                           |            |       |        | Current Passes: None    |
 |   |                           |            |       |        | Pending Passes: None    |
 |   |                           |            |       |        | Reload: $200 - Autoload |
-+---+---------------------------+------------+-------+--------+-------------------------+
++---------------------------------------------------------------------------------------+
 ```
 
-If you wish to use clippercard without specifying username/password on the CLI, create a file ``~/.clippercardrc`` with this format::
+If you wish to use clippercard without specifying username/password on the CLI, create a file ``~/.config/clippercard/credentials.ini`` with this format::
 
 
 ```ini
@@ -108,6 +112,9 @@ The `other` credentials can then be accessed via::
 $ clippercard summary --account=other
 ```
 
+Non-default accounts keep separate saved login cookies in account-specific files such as
+`~/.config/clippercard/auth.other.cookies`.
+
 # More examples
 
 If you have a transit pass that isn't recognized by this tool, you can privately share a copy of your account page `view-source:` with the maintainer.
@@ -115,10 +122,13 @@ If you have a transit pass that isn't recognized by this tool, you can privately
 # Contribute
 
 1. fork the repo to your personal GitHub account
+1. install dev dependencies: `make sync`
 1. make your changes in your repo
 1. for Python source, follow local style consistency and PEP8
-1. run `pylint` on your diffs
-1. add unit tests, make sure they pass (just run `pytest` 😎)
+1. format and lint your code: `make format` and `make lint`
+1. run tests on the current Python version: `make test`
+1. run tests across all supported Python versions: `make test-all`
+1. add unit tests, make sure they pass
 1. remember to bump the version number wherever applies
 1. add a new line for your revision to `CHANGES.txt` describing your change
 1. send a pull request to https://github.com/clippercard/clippercard-python w/problem or goal statement and implementation details
