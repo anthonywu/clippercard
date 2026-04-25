@@ -99,6 +99,7 @@ def _build_parser():
 
     summary = subparsers.add_parser("summary", help="Show account summary")
     summary.add_argument("--debug", action="store_true", help="Enable debug logging")
+    summary.add_argument("--show-private", action="store_true", help="Show private information like card numbers (use with caution)")
 
     auth_group = summary.add_argument_group("authentication")
     auth_group.add_argument(
@@ -139,7 +140,7 @@ def main():
         if args.command == "summary":
             if session.reused_cookies:
                 print(f"Reusing saved cookies from {session.cookie_jar_path}")
-            print(clippercard.porcelain.tabular_output(session.profile_info, session.cards))
+            print(clippercard.porcelain.tabular_output(session.profile_info, session.cards, show_private=args.show_private))
     except (clippercard.client.ClipperCardError, ClipperCardCommandError, FileNotFoundError) as e:
         sys.exit(str(e))
 
