@@ -41,17 +41,18 @@ def _render_table(table):
     console.print(table)
     return buffer.getvalue().rstrip()
 
+
 def _redact_private_info(label, value):
     match label.lower():
         case "name":
-            return ' '.join([part[:2] + "***" for part in value.split()])
+            return " ".join([part[:2] + "***" for part in value.split()])
         case "email":
             local, domain = value.split("@")
             return local[0] + "***@" + domain
         case "mailing_address":
             return "***"
         case "phone":
-            re_match = re.match(r'(\+?\d{1,3})?([-.\s]?)[0-9-.\s]+(\d{2}-?\d{2})', value)
+            re_match = re.match(r"(\+?\d{1,3})?([-.\s]?)[0-9-.\s]+(\d{2}-?\d{2})", value)
             if re_match:
                 groups = re_match.groups()
                 redacted = f"{groups[0] + groups[1] if groups[0] else ''}***-***-{groups[2]}"
@@ -59,6 +60,7 @@ def _redact_private_info(label, value):
         case "serial_number":
             return ("*" * (len(value) - 4)) + value[-4:]
     return value
+
 
 def tabular_output(user_profile, cards, show_private=False):
     """

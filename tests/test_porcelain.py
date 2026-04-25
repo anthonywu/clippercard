@@ -38,6 +38,7 @@ def test_tabular_output_renders_profile_and_cards_as_ascii_tables():
 +---------------------------------------------------------------------------------------+"""
     )
 
+
 def test_tabular_output_renders_profile_and_cards_as_ascii_tables_without_private_info():
     profile = namedtuple("Profile", "name email alt_phone")(
         name="Golden Gate Hacker",
