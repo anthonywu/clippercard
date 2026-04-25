@@ -21,7 +21,7 @@ def test_tabular_output_renders_profile_and_cards_as_ascii_tables():
         )
     ]
 
-    output = tabular_output(profile, cards)
+    output = tabular_output(profile, cards, show_private=True)
 
     assert (
         output
@@ -36,6 +36,40 @@ def test_tabular_output_renders_profile_and_cards_as_ascii_tables():
 |   |                           |            |       |        | Current Passes: None    |
 |   |                           |            |       |        | Reload: $255 - Autoload |
 +---------------------------------------------------------------------------------------+"""
+    )
+
+def test_tabular_output_renders_profile_and_cards_as_ascii_tables_without_private_info():
+    profile = namedtuple("Profile", "name email alt_phone")(
+        name="Golden Gate Hacker",
+        email="goldengate88@systemfu.com",
+        alt_phone="",
+    )
+    cards = [
+        SimpleNamespace(
+            nickname="Primary, card ending in 4134",
+            serial_number="2021234134",
+            type="ADULT",
+            status="Active",
+            products=["Cash Value: $195.00", "Current Passes: None"],
+            features=["Reload: $255 - Autoload"],
+        )
+    ]
+
+    output = tabular_output(profile, cards, show_private=False)
+
+    assert (
+        output
+        == """+---------------------------+
+|  name | Go*** Ga*** Ha*** |
+| email | g***@systemfu.com |
++---------------------------+
++------------------------------------------------------------------------------------------+
+| # | Name                         | Serial     | Type  | Status | Products                |
+|---+------------------------------+------------+-------+--------+-------------------------|
+| 1 | Primary, card ending in 4134 | ******4134 | ADULT | Active | Cash Value: $195.00     |
+|   |                              |            |       |        | Current Passes: None    |
+|   |                              |            |       |        | Reload: $255 - Autoload |
++------------------------------------------------------------------------------------------+"""
     )
 
 

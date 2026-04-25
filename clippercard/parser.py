@@ -20,6 +20,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 import collections
+from datetime import datetime
 import itertools
 import json
 import logging
@@ -364,8 +365,8 @@ def parse_dashboard_cards(dashboard_html_content):
             pass_name = pass_info.get("passDescription", "Unknown Pass")
             # NB: expirationDateTime is likely card validity, not pass expiration
             # empirically it is ~100 years after pass activation
-            expiration = pass_info.get("endDateTime", "Unknown Expiration")
-            products.append(CardProduct(name=pass_name, value=f"Expires {expiration}"))
+            expiration = datetime.fromisoformat(pass_info.get("endDateTime", "Unknown Expiration")).date()
+            products.append(CardProduct(name="Pass", value=f"{pass_name}\n  - Expires {expiration}"))
 
         # Card features (currently empty, can extend later)
         features = []
