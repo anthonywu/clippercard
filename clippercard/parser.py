@@ -24,6 +24,7 @@ import itertools
 import json
 import logging
 import re
+from warnings import deprecated
 
 import bs4
 
@@ -158,6 +159,9 @@ def parse_login_form_fields(login_page_content):
     return fields
 
 
+# Is this method still useful? Main client code now uses parse_dashboard_cards,
+# while this method is 5 years out of date per git blame.
+@deprecated("Only used in tests")
 def parse_cards(account_page_soup):
     """Parse the list of Clipper Cards registered to the profile"""
     card_info_divs = account_page_soup.find_all(
@@ -353,6 +357,15 @@ def parse_dashboard_cards(dashboard_html_content):
             balance = bart_purse.get("balance")
             if balance is not None:
                 products.append(CardProduct(name="BART", value=_cents_to_dollars(balance)))
+
+        passList = account.get("passList", [])
+        for pass_info in passList:
+            logger.debug("Parsing pass info: %s", pass_info.keys())
+            pass_name = pass_info.get("passDescription", "Unknown Pass")
+            # NB: expirationDateTime is likely card validity, not pass expiration
+            # empirically it is ~100 years after pass activation
+            expiration = pass_info.get("endDateTime", "Unknown Expiration")
+            products.append(CardProduct(name=pass_name, value=f"Expires {expiration}"))
 
         # Card features (currently empty, can extend later)
         features = []
