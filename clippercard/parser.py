@@ -20,11 +20,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 import collections
-from datetime import datetime
 import itertools
 import json
 import logging
 import re
+from datetime import datetime
 from warnings import deprecated
 
 import bs4

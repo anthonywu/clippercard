@@ -102,6 +102,12 @@ def _build_parser():
     summary.add_argument(
         "--show-private", action="store_true", help="Show private information like card numbers (use with caution)"
     )
+    summary.add_argument(
+        "--output",
+        choices=("table", "json"),
+        default=None,
+        help="Output format (default: table when interactive, json when piped)",
+    )
 
     auth_group = summary.add_argument_group("authentication")
     auth_group.add_argument(
@@ -140,13 +146,25 @@ def main():
             cookie_jar_path=_cookie_jar_path_for_account(args.account),
         )
         if args.command == "summary":
+            output = args.output or ("table" if sys.stdout.isatty() else "json")
             if session.reused_cookies:
-                print(f"Reusing saved cookies from {session.cookie_jar_path}")
-            print(
-                clippercard.porcelain.tabular_output(
-                    session.profile_info, session.cards, show_private=args.show_private
+                cookie_message = f"Reusing saved cookies from {session.cookie_jar_path}"
+                if output == "json":
+                    print(cookie_message, file=sys.stderr)
+                else:
+                    print(cookie_message)
+            if output == "json":
+                print(
+                    clippercard.porcelain.summary_json_output(
+                        session.profile_info, session.cards, show_private=args.show_private
+                    )
                 )
-            )
+            else:
+                print(
+                    clippercard.porcelain.tabular_output(
+                        session.profile_info, session.cards, show_private=args.show_private
+                    )
+                )
     except (clippercard.client.ClipperCardError, ClipperCardCommandError, FileNotFoundError) as e:
         sys.exit(str(e))
 

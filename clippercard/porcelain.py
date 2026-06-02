@@ -19,8 +19,9 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-from io import StringIO
+import json
 import re
+from io import StringIO
 
 from rich import box
 from rich.console import Console
@@ -43,6 +44,8 @@ def _render_table(table):
 
 
 def _redact_private_info(label, value):
+    if value is None:
+        return value
     match label.lower():
         case "name":
             return " ".join([part[:2] + "***" for part in value.split()])
@@ -60,6 +63,58 @@ def _redact_private_info(label, value):
         case "serial_number":
             return ("*" * (len(value) - 4)) + value[-4:]
     return value
+
+
+def _asdict(value):
+    if value is None:
+        return None
+    if hasattr(value, "_asdict"):
+        return value._asdict()
+    if isinstance(value, dict):
+        return value
+    return vars(value)
+
+
+def _product_to_json(product):
+    data = _asdict(product)
+    return {
+        "name": data.get("name"),
+        "value": data.get("value"),
+    }
+
+
+def summary_json_output(user_profile, cards, show_private=False):
+    """
+    Serializes a user profile and its associated cards and products as JSON.
+    """
+    profile = _asdict(user_profile)
+    if profile is not None:
+        profile = {
+            label: (_redact_private_info(label, value) if not show_private else value)
+            for label, value in profile.items()
+            if value not in (None, "")
+        }
+
+    card_items = None
+    if cards is not None:
+        card_items = []
+        for card in cards:
+            card_data = _asdict(card)
+            serial_number = card_data.get("serial_number")
+            if not show_private:
+                serial_number = _redact_private_info("serial_number", serial_number)
+            card_items.append(
+                {
+                    "serial_number": serial_number,
+                    "nickname": card_data.get("nickname"),
+                    "type": card_data.get("type"),
+                    "status": card_data.get("status"),
+                    "products": [_product_to_json(product) for product in card_data.get("products", [])],
+                    "features": [_product_to_json(feature) for feature in card_data.get("features", [])],
+                }
+            )
+
+    return json.dumps({"profile": profile, "cards": card_items}, indent=2)
 
 
 def tabular_output(user_profile, cards, show_private=False):
