@@ -74,5 +74,16 @@ def test_tabular_output_renders_profile_and_cards_as_ascii_tables_without_privat
     )
 
 
+def test_tabular_output_redacts_alternate_phone_without_private_info():
+    profile = namedtuple("Profile", "alt_phone")(
+        alt_phone="+1 510-555-0199",
+    )
+
+    output = tabular_output(profile, None, show_private=False)
+
+    assert "+1 510-555-0199" not in output
+    assert "+1 ***-***-0199" in output
+
+
 def test_tabular_output_reports_missing_cards():
     assert tabular_output(None, []) == "No cards registered"

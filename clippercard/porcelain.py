@@ -51,7 +51,7 @@ def _redact_private_info(label, value):
             return local[0] + "***@" + domain
         case "mailing_address":
             return "***"
-        case "phone":
+        case "phone" | "alt_phone":
             re_match = re.match(r"(\+?\d{1,3})?([-.\s]?)[0-9-.\s]+(\d{2}-?\d{2})", value)
             if re_match:
                 groups = re_match.groups()
