@@ -122,12 +122,12 @@ If you have a transit pass that isn't recognized by this tool, you can privately
 # Contribute
 
 1. fork the repo to your personal GitHub account
-1. install dev dependencies: `make sync`
+1. install dev dependencies: `just sync`
 1. make your changes in your repo
 1. for Python source, follow local style consistency and PEP8
-1. format and lint your code: `make format` and `make lint`
-1. run tests on the current Python version: `make test`
-1. run tests across all supported Python versions: `make test-all`
+1. format and lint your code: `just format` and `just lint`
+1. run tests on the current Python version: `just test`
+1. run tests across all supported Python versions: `just test-all`
 1. add unit tests, make sure they pass
 1. remember to bump the version number wherever applies
 1. add a new line for your revision to `CHANGES.txt` describing your change
