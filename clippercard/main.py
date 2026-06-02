@@ -4,9 +4,11 @@ ClipperCard Client - CLI entry point
 
 import argparse
 import configparser
+import json
 import logging
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,6 +18,9 @@ import clippercard.porcelain
 
 class ClipperCardCommandError(Exception):
     pass
+
+
+_CREDENTIAL_STORE_SERVICE = "clippercard.credentials"
 
 
 def _init_config_file(config_file_path):
@@ -31,7 +36,51 @@ password = <replace_with_your_password>
     print(f"Created config file: {config_file_path}")
 
 
-def _get_client_auth(args):
+def _run_keychain(*args):
+    if sys.platform != "darwin":
+        raise ClipperCardCommandError("macOS Keychain credential storage is only supported on macOS")
+    return subprocess.run(
+        ["security", *args],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _load_keychain_auth(account):
+    result = _run_keychain(
+        "find-generic-password",
+        "-s",
+        _CREDENTIAL_STORE_SERVICE,
+        "-a",
+        account,
+        "-w",
+    )
+    if result.returncode != 0:
+        return None
+    try:
+        credentials = json.loads(result.stdout)
+        return credentials["username"], credentials["password"]
+    except (KeyError, TypeError, json.JSONDecodeError) as err:
+        raise ClipperCardCommandError(f"Keychain credentials for account {account!r} are unreadable") from err
+
+
+def _save_keychain_auth(account, username, password):
+    result = _run_keychain(
+        "add-generic-password",
+        "-U",
+        "-s",
+        _CREDENTIAL_STORE_SERVICE,
+        "-a",
+        account,
+        "-w",
+        json.dumps({"username": username, "password": password}),
+    )
+    if result.returncode != 0:
+        raise ClipperCardCommandError(f"Unable to save credentials to macOS Keychain: {result.stderr.strip()}")
+
+
+def _get_config_or_arg_auth(args):
     """
     Finds/parses the username and password from either the args or a config file.
 
@@ -62,6 +111,18 @@ def _get_client_auth(args):
                 f"Account config section {args.account!r} is not found in {config_file_path}"
             ) from err
     return username, password
+
+
+def _get_client_auth(args):
+    if args.credential_store == "keychain":
+        credentials = _load_keychain_auth(args.account)
+        if credentials:
+            return credentials
+        username, password = _get_config_or_arg_auth(args)
+        _save_keychain_auth(args.account, username, password)
+        return username, password
+
+    return _get_config_or_arg_auth(args)
 
 
 def _cookie_jar_path_for_account(account, cookie_jar_path=None):
@@ -122,6 +183,20 @@ def _build_parser():
     )
     auth_group.add_argument("--username", help="Login username (instead of config file)")
     auth_group.add_argument("--password", help="Login password (instead of config file)")
+    auth_group.add_argument(
+        "--credential-store",
+        choices=("config", "keychain"),
+        default="config",
+        help="Login credential storage backend (default: config)",
+    )
+
+    cookie_group = summary.add_argument_group("cookie storage")
+    cookie_group.add_argument(
+        "--cookie-store",
+        choices=("file", "keychain"),
+        default="file",
+        help="Saved cookie storage backend (default: file)",
+    )
 
     return parser
 
@@ -144,11 +219,14 @@ def main():
             username,
             password,
             cookie_jar_path=_cookie_jar_path_for_account(args.account),
+            cookie_store=args.cookie_store,
+            keychain_account=args.account,
         )
         if args.command == "summary":
             output = args.output or ("table" if sys.stdout.isatty() else "json")
             if session.reused_cookies:
-                cookie_message = f"Reusing saved cookies from {session.cookie_jar_path}"
+                cookie_storage_label = getattr(session, "cookie_storage_label", session.cookie_jar_path)
+                cookie_message = f"Reusing saved cookies from {cookie_storage_label}"
                 if output == "json":
                     print(cookie_message, file=sys.stderr)
                 else:

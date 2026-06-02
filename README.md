@@ -115,6 +115,32 @@ $ clippercard summary --account=other
 Non-default accounts keep separate saved login cookies in account-specific files such as
 `~/.config/clippercard/auth.other.cookies`.
 
+On macOS, you can store saved login cookies in Keychain instead of a local cookie file:
+
+```sh
+$ clippercard summary --cookie-store keychain
+```
+
+Keychain cookies are stored as generic password items under the configured account name. Use
+`--account=other --cookie-store keychain` to keep separate saved sessions for non-default accounts.
+If Keychain does not already have saved cookies for that account, the CLI will copy any existing
+file-based cookie jar into Keychain the first time you use `--cookie-store keychain`.
+
+You can also store Clipper login credentials in Keychain instead of reading them from
+`credentials.ini` on every run:
+
+```sh
+$ clippercard summary --credential-store keychain
+```
+
+If Keychain does not already have credentials for that account, the CLI will copy credentials from
+`credentials.ini` or `--username/--password` into Keychain the first time you use
+`--credential-store keychain`. To use Keychain for both credentials and saved cookies:
+
+```sh
+$ clippercard summary --credential-store keychain --cookie-store keychain
+```
+
 For scripts and agents, request structured JSON instead of the default table output:
 
 ```sh
