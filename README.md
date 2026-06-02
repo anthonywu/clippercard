@@ -115,6 +115,46 @@ $ clippercard summary --account=other
 Non-default accounts keep separate saved login cookies in account-specific files such as
 `~/.config/clippercard/auth.other.cookies`.
 
+For scripts and agents, request structured JSON instead of the default table output:
+
+```sh
+$ clippercard summary --output json
+{
+  "profile": {
+    "name": "Go*** Ga*** Ri***",
+    "email": "g***@example.com"
+  },
+  "cards": [
+    {
+      "serial_number": "******4134",
+      "nickname": "Primary, card ending in 4134",
+      "type": "ADULT",
+      "status": "Active",
+      "products": [
+        {
+          "name": "Cash Value",
+          "value": "$195.00"
+        }
+      ],
+      "features": [
+        {
+          "name": "Reload",
+          "value": "$255 - Autoload"
+        }
+      ]
+    }
+  ]
+}
+```
+
+When stdout is piped, `summary` defaults to JSON for Unix tooling:
+
+```sh
+$ clippercard summary | jq .
+```
+
+Use `--show-private` with either output format to include unredacted profile and card details.
+
 # More examples
 
 If you have a transit pass that isn't recognized by this tool, you can privately share a copy of your account page `view-source:` with the maintainer.

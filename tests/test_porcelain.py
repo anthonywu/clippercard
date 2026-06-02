@@ -1,7 +1,8 @@
+import json
 from collections import namedtuple
 from types import SimpleNamespace
 
-from clippercard.porcelain import tabular_output
+from clippercard.porcelain import summary_json_output, tabular_output
 
 
 def test_tabular_output_renders_profile_and_cards_as_ascii_tables():
@@ -87,3 +88,40 @@ def test_tabular_output_redacts_alternate_phone_without_private_info():
 
 def test_tabular_output_reports_missing_cards():
     assert tabular_output(None, []) == "No cards registered"
+
+
+def test_summary_json_output_renders_profile_and_cards_without_private_info():
+    profile = namedtuple("Profile", "name email alt_phone")(
+        name="Golden Gate Hacker",
+        email="goldengate88@systemfu.com",
+        alt_phone="",
+    )
+    cards = [
+        SimpleNamespace(
+            nickname="Primary, card ending in 4134",
+            serial_number="2021234134",
+            type="ADULT",
+            status="Active",
+            products=[SimpleNamespace(name="Cash Value", value="$195.00")],
+            features=[SimpleNamespace(name="Reload", value="$255 - Autoload")],
+        )
+    ]
+
+    output = json.loads(summary_json_output(profile, cards, show_private=False))
+
+    assert output == {
+        "profile": {
+            "name": "Go*** Ga*** Ha***",
+            "email": "g***@systemfu.com",
+        },
+        "cards": [
+            {
+                "serial_number": "******4134",
+                "nickname": "Primary, card ending in 4134",
+                "type": "ADULT",
+                "status": "Active",
+                "products": [{"name": "Cash Value", "value": "$195.00"}],
+                "features": [{"name": "Reload", "value": "$255 - Autoload"}],
+            }
+        ],
+    }
