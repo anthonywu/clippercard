@@ -66,6 +66,16 @@ class TestDashboardCardParsing:
         assert len(cash_products) == 1
         assert cash_products[0].value == "$41.75"
 
+    def test_parse_with_pass_list(self, dashboard_html):
+        """Card with passList should have products for each pass"""
+        result = parser.parse_dashboard_cards(dashboard_html)
+        # First card "Sample Card 1" has a passList with 1 pass
+        first_card = result[0]
+        pass_products = [p for p in first_card.products if p.name == "Pass"]
+        assert len(pass_products) == 1
+        assert "VTA Standard Pass" in pass_products[0].value
+        assert "Expires 2026-05-01" in pass_products[0].value
+
     def test_parse_serial_numbers(self, dashboard_html):
         """Verify serial numbers are parsed"""
         result = parser.parse_dashboard_cards(dashboard_html)

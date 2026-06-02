@@ -20,6 +20,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 from io import StringIO
+import re
 
 from rich import box
 from rich.console import Console
@@ -41,7 +42,27 @@ def _render_table(table):
     return buffer.getvalue().rstrip()
 
 
-def tabular_output(user_profile, cards):
+def _redact_private_info(label, value):
+    match label.lower():
+        case "name":
+            return " ".join([part[:2] + "***" for part in value.split()])
+        case "email":
+            local, domain = value.split("@")
+            return local[0] + "***@" + domain
+        case "mailing_address":
+            return "***"
+        case "phone":
+            re_match = re.match(r"(\+?\d{1,3})?([-.\s]?)[0-9-.\s]+(\d{2}-?\d{2})", value)
+            if re_match:
+                groups = re_match.groups()
+                redacted = f"{groups[0] + groups[1] if groups[0] else ''}***-***-{groups[2]}"
+                return redacted
+        case "serial_number":
+            return ("*" * (len(value) - 4)) + value[-4:]
+    return value
+
+
+def tabular_output(user_profile, cards, show_private=False):
     """
     Pretty prints a user profile and its associated cards and products.
     """
@@ -54,6 +75,8 @@ def tabular_output(user_profile, cards):
         for label, value in user_profile._asdict().items():
             if value in (None, ""):
                 continue
+            if not show_private:
+                value = _redact_private_info(label, value)
             profile_table.add_row(Text(str(label)), Text(str(value)))
         if profile_table.row_count:
             output_parts.append(_render_table(profile_table))
@@ -67,10 +90,13 @@ def tabular_output(user_profile, cards):
         card_table.add_column("Status", justify="left", no_wrap=True)
         card_table.add_column("Products", justify="left", no_wrap=True)
         for i, card in enumerate(cards, 1):
+            serial = card.serial_number
+            if not show_private:
+                serial = _redact_private_info("serial_number", serial)
             card_table.add_row(
                 str(i),
                 Text(str(card.nickname)),
-                Text(str(card.serial_number)),
+                Text(str(serial)),
                 Text(str(card.type)),
                 Text(str(card.status)),
                 Text("\n".join(str(_) for _ in card.products + card.features)),
