@@ -65,6 +65,13 @@ def _load_keychain_auth(account):
         raise ClipperCardCommandError(f"Keychain credentials for account {account!r} are unreadable") from err
 
 
+def _keychain_item_exists(service, account):
+    if sys.platform != "darwin":
+        return False
+    result = _run_keychain("find-generic-password", "-s", service, "-a", account)
+    return result.returncode == 0
+
+
 def _save_keychain_auth(account, username, password):
     result = _run_keychain(
         "add-generic-password",
@@ -113,6 +120,26 @@ def _get_config_or_arg_auth(args):
     return username, password
 
 
+def _config_auth_available(args):
+    username, password = args.username, args.password
+    if username and password:
+        return True
+
+    config_file_path = os.path.expanduser(args.config)
+    if not os.path.exists(config_file_path):
+        return False
+
+    parser = configparser.ConfigParser()
+    parser.read(config_file_path)
+    try:
+        section = args.account
+        parser.get(section, "username")
+        parser.get(section, "password")
+    except (configparser.NoSectionError, configparser.NoOptionError):
+        return False
+    return True
+
+
 def _get_client_auth(args):
     if args.credential_store == "keychain":
         credentials = _load_keychain_auth(args.account)
@@ -122,7 +149,24 @@ def _get_client_auth(args):
         _save_keychain_auth(args.account, username, password)
         return username, password
 
+    if args.credential_store is None:
+        if _config_auth_available(args):
+            return _get_config_or_arg_auth(args)
+        credentials = _load_keychain_auth(args.account)
+        if credentials:
+            return credentials
+
     return _get_config_or_arg_auth(args)
+
+
+def _resolve_credential_store(args):
+    if args.credential_store is not None:
+        return args.credential_store
+    if _config_auth_available(args):
+        return "config"
+    if _keychain_item_exists(_CREDENTIAL_STORE_SERVICE, args.account):
+        return "keychain"
+    return "config"
 
 
 def _cookie_jar_path_for_account(account, cookie_jar_path=None):
@@ -146,6 +190,18 @@ def _cookie_jar_path_for_account(account, cookie_jar_path=None):
     else:
         cookie_name = f"{base_path.name}.{safe_account}"
     return base_path.with_name(cookie_name)
+
+
+def _resolve_cookie_store(args, cookie_jar_path=None):
+    if args.cookie_store is not None:
+        return args.cookie_store
+
+    cookie_jar_path = cookie_jar_path or _cookie_jar_path_for_account(args.account)
+    if cookie_jar_path.exists():
+        return "file"
+    if _keychain_item_exists(clippercard.Session.COOKIE_STORE_SERVICE, args.account):
+        return "keychain"
+    return "file"
 
 
 def _build_parser():
@@ -186,16 +242,16 @@ def _build_parser():
     auth_group.add_argument(
         "--credential-store",
         choices=("config", "keychain"),
-        default="config",
-        help="Login credential storage backend (default: config)",
+        default=None,
+        help="Login credential storage backend (default: config, or keychain when config is unavailable)",
     )
 
     cookie_group = summary.add_argument_group("cookie storage")
     cookie_group.add_argument(
         "--cookie-store",
         choices=("file", "keychain"),
-        default="file",
-        help="Saved cookie storage backend (default: file)",
+        default=None,
+        help="Saved cookie storage backend (default: file, or keychain when the file jar is unavailable)",
     )
 
     return parser
@@ -214,12 +270,17 @@ def main():
         sys.exit(1)
 
     try:
+        cookie_jar_path = _cookie_jar_path_for_account(args.account)
+        credential_store = _resolve_credential_store(args)
+        cookie_store = _resolve_cookie_store(args, cookie_jar_path=cookie_jar_path)
+        args.credential_store = credential_store
+        args.cookie_store = cookie_store
         username, password = _get_client_auth(args)
         session = clippercard.Session(
             username,
             password,
-            cookie_jar_path=_cookie_jar_path_for_account(args.account),
-            cookie_store=args.cookie_store,
+            cookie_jar_path=cookie_jar_path,
+            cookie_store=cookie_store,
             keychain_account=args.account,
         )
         if args.command == "summary":

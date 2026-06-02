@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "clippercard"
-version = "202606.2.1"
+version = "202606.2.2"
 description = "Unofficial Python API for Clipper Card (transportation pass used in the SF Bay Area)"
 readme = "README.md"
 license = "MIT"

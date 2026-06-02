@@ -135,6 +135,49 @@ def test_get_client_auth_keychain_requires_macos():
     assert str(exc.value) == "macOS Keychain credential storage is only supported on macOS"
 
 
+def test_get_client_auth_uses_keychain_when_config_auth_is_missing():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store=None,
+        username=None,
+        password=None,
+    )
+
+    with (
+        patch("clippercard.main._config_auth_available", return_value=False),
+        patch("clippercard.main._load_keychain_auth", return_value=("person@example.com", "supersecret")),
+    ):
+        assert main._get_client_auth(args) == ("person@example.com", "supersecret")
+
+
+def test_resolve_credential_store_falls_back_to_keychain_when_config_auth_is_missing():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store=None,
+        username=None,
+        password=None,
+    )
+
+    with (
+        patch("clippercard.main._config_auth_available", return_value=False),
+        patch("clippercard.main._keychain_item_exists", return_value=True),
+    ):
+        assert main._resolve_credential_store(args) == "keychain"
+
+
+def test_resolve_cookie_store_falls_back_to_keychain_when_cookie_file_is_missing(tmp_path):
+    args = SimpleNamespace(account="other", cookie_store=None)
+    expected_cookie_path = tmp_path / "auth.other.cookies"
+
+    with (
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
+        patch("clippercard.main._keychain_item_exists", return_value=True),
+    ):
+        assert main._resolve_cookie_store(args) == "keychain"
+
+
 def test_summary_uses_account_specific_cookie_jar_path():
     expected_cookie_path = Path("/tmp/auth.other.cookies")
 
