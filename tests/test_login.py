@@ -153,13 +153,14 @@ def test_login_saves_cookie_jar_after_successful_login(tmp_path):
 def test_keychain_cookie_store_saves_and_loads_cookies():
     saved = {}
 
-    def fake_run(args, check=False, capture_output=False, text=False):
+    def fake_run(args, check=False, capture_output=False, text=False, **kwargs):
+        stdin_payload = kwargs.get("input")
         assert check is False
         assert capture_output is True
         assert text is True
         if args[1] == "add-generic-password":
             saved["command"] = args
-            saved["payload"] = args[-1]
+            saved["payload"] = stdin_payload
             return CompletedProcess(args, 0, "", "")
         if args[1] == "find-generic-password":
             return CompletedProcess(args, 0, saved["payload"], "")
@@ -187,6 +188,7 @@ def test_keychain_cookie_store_saves_and_loads_cookies():
         "default",
         "-w",
     ]
+    assert "fresh-session" not in saved["command"]
     assert loaded is True
     assert reused_session.cookies._cookies["www.clippercard.com"]["/"]["JSESSIONID"].value == "fresh-session"
 
@@ -201,7 +203,8 @@ def test_keychain_cookie_store_migrates_existing_file_cookies(tmp_path):
 
     saved = {}
 
-    def fake_run(args, check=False, capture_output=False, text=False):
+    def fake_run(args, check=False, capture_output=False, text=False, **kwargs):
+        stdin_payload = kwargs.get("input")
         assert check is False
         assert capture_output is True
         assert text is True
@@ -209,7 +212,7 @@ def test_keychain_cookie_store_migrates_existing_file_cookies(tmp_path):
             return CompletedProcess(args, 44, "", "The specified item could not be found.")
         if args[1] == "add-generic-password":
             saved["command"] = args
-            saved["payload"] = args[-1]
+            saved["payload"] = stdin_payload
             return CompletedProcess(args, 0, "", "")
         raise AssertionError(f"Unexpected security command: {args}")
 
@@ -236,6 +239,7 @@ def test_keychain_cookie_store_migrates_existing_file_cookies(tmp_path):
         "default",
         "-w",
     ]
+    assert "saved-session" not in saved["command"]
     assert session.cookies._cookies["www.clippercard.com"]["/"]["JSESSIONID"].value == "saved-session"
     assert cookie_jar_path.exists()
 

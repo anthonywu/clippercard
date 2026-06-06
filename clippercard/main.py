@@ -36,14 +36,18 @@ password = <replace_with_your_password>
     print(f"Created config file: {config_file_path}")
 
 
-def _run_keychain(*args):
+def _run_keychain(*args, input_text=None):
     if sys.platform != "darwin":
         raise ClipperCardCommandError("macOS Keychain credential storage is only supported on macOS")
+    kwargs = {}
+    if input_text is not None:
+        kwargs["input"] = input_text
     return subprocess.run(
         ["security", *args],
         check=False,
         capture_output=True,
         text=True,
+        **kwargs,
     )
 
 
@@ -81,7 +85,7 @@ def _save_keychain_auth(account, username, password):
         "-a",
         account,
         "-w",
-        json.dumps({"username": username, "password": password}),
+        input_text=json.dumps({"username": username, "password": password}),
     )
     if result.returncode != 0:
         raise ClipperCardCommandError(f"Unable to save credentials to macOS Keychain: {result.stderr.strip()}")
@@ -140,23 +144,33 @@ def _config_auth_available(args):
     return True
 
 
-def _get_client_auth(args):
+def _arg_auth_available(args):
+    return bool(args.username and args.password)
+
+
+def _get_client_auth_with_source(args):
     if args.credential_store == "keychain":
+        if _arg_auth_available(args):
+            return _get_config_or_arg_auth(args), "config"
         credentials = _load_keychain_auth(args.account)
         if credentials:
-            return credentials
-        username, password = _get_config_or_arg_auth(args)
-        _save_keychain_auth(args.account, username, password)
-        return username, password
+            return credentials, "keychain"
+        return _get_config_or_arg_auth(args), "config"
 
     if args.credential_store is None:
         if _config_auth_available(args):
-            return _get_config_or_arg_auth(args)
+            return _get_config_or_arg_auth(args), "config"
         credentials = _load_keychain_auth(args.account)
         if credentials:
-            return credentials
+            return credentials, "keychain"
 
-    return _get_config_or_arg_auth(args)
+    return _get_config_or_arg_auth(args), "config"
+
+
+def _get_client_auth(args):
+    credentials, source = _get_client_auth_with_source(args)
+    args._credential_source = source
+    return credentials
 
 
 def _resolve_credential_store(args):
@@ -283,6 +297,8 @@ def main():
             cookie_store=cookie_store,
             keychain_account=args.account,
         )
+        if credential_store == "keychain" and getattr(args, "_credential_source", "config") != "keychain":
+            _save_keychain_auth(args.account, username, password)
         if args.command == "summary":
             output = args.output or ("table" if sys.stdout.isatty() else "json")
             if session.reused_cookies:

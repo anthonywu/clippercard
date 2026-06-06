@@ -162,14 +162,18 @@ class ClipperCardWebSession(requests.Session):
         for cookie in json.loads(cookie_data).get("cookies", []):
             self.cookies.set_cookie(self._cookie_from_dict(cookie))
 
-    def _run_keychain(self, *args):
+    def _run_keychain(self, *args, input_text=None):
         if sys.platform != "darwin":
             raise ClipperCardError("macOS Keychain cookie storage is only supported on macOS")
+        kwargs = {}
+        if input_text is not None:
+            kwargs["input"] = input_text
         return subprocess.run(
             ["security", *args],
             check=False,
             capture_output=True,
             text=True,
+            **kwargs,
         )
 
     def _load_keychain_cookies(self):
@@ -202,7 +206,7 @@ class ClipperCardWebSession(requests.Session):
             "-a",
             self._keychain_account,
             "-w",
-            self._serialize_cookies(),
+            input_text=self._serialize_cookies(),
         )
         if result.returncode != 0:
             raise ClipperCardError(f"Unable to save cookies to macOS Keychain: {result.stderr.strip()}")
