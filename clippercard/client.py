@@ -21,8 +21,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # === imports ===
 
+import json
 import logging
-from http.cookiejar import LoadError, MozillaCookieJar
+import subprocess
+import sys
+from http.cookiejar import Cookie, LoadError, MozillaCookieJar
 from pathlib import Path
 
 import bs4
@@ -59,6 +62,7 @@ class ClipperCardWebSession(requests.Session):
     DASHBOARD_URL = "https://www.clippercard.com/dashboard"
     PROFILE_URL = "https://www.clippercard.com/profile"
     COOKIE_JAR_PATH = Path("~/.config/clippercard/auth.cookies").expanduser()
+    COOKIE_STORE_SERVICE = "clippercard.cookies"
     HEADERS = {
         "User-Agent": (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -78,10 +82,12 @@ class ClipperCardWebSession(requests.Session):
         "Upgrade-Insecure-Requests": "1",
     }
 
-    def __init__(self, username=None, password=None, cookie_jar_path=None):
+    def __init__(self, username=None, password=None, cookie_jar_path=None, cookie_store="file", keychain_account=None):
         requests.Session.__init__(self)
         self.headers.update(self.HEADERS)
         self._cookie_jar_path = Path(cookie_jar_path).expanduser() if cookie_jar_path else self.COOKIE_JAR_PATH
+        self._cookie_store = cookie_store
+        self._keychain_account = keychain_account or "default"
         self.cookies = MozillaCookieJar(str(self._cookie_jar_path))
         self._dashboard_resp_text = None
         self._profile_info = None
@@ -98,7 +104,127 @@ class ClipperCardWebSession(requests.Session):
     def cookie_jar_path(self):
         return self._cookie_jar_path
 
-    def _load_cookie_jar(self):
+    @property
+    def cookie_storage_label(self):
+        if self._cookie_store == "keychain":
+            return f"macOS Keychain item {self.COOKIE_STORE_SERVICE}:{self._keychain_account}"
+        return str(self._cookie_jar_path)
+
+    @staticmethod
+    def _cookie_to_dict(cookie):
+        return {
+            "version": cookie.version,
+            "name": cookie.name,
+            "value": cookie.value,
+            "port": cookie.port,
+            "port_specified": cookie.port_specified,
+            "domain": cookie.domain,
+            "domain_specified": cookie.domain_specified,
+            "domain_initial_dot": cookie.domain_initial_dot,
+            "path": cookie.path,
+            "path_specified": cookie.path_specified,
+            "secure": cookie.secure,
+            "expires": cookie.expires,
+            "discard": cookie.discard,
+            "comment": cookie.comment,
+            "comment_url": cookie.comment_url,
+            "rest": cookie._rest,
+            "rfc2109": cookie.rfc2109,
+        }
+
+    @staticmethod
+    def _cookie_from_dict(data):
+        return Cookie(
+            version=data["version"],
+            name=data["name"],
+            value=data["value"],
+            port=data["port"],
+            port_specified=data["port_specified"],
+            domain=data["domain"],
+            domain_specified=data["domain_specified"],
+            domain_initial_dot=data["domain_initial_dot"],
+            path=data["path"],
+            path_specified=data["path_specified"],
+            secure=data["secure"],
+            expires=data["expires"],
+            discard=data["discard"],
+            comment=data["comment"],
+            comment_url=data["comment_url"],
+            rest=data.get("rest") or {},
+            rfc2109=data["rfc2109"],
+        )
+
+    def _serialize_cookies(self):
+        return json.dumps({"cookies": [self._cookie_to_dict(cookie) for cookie in self.cookies]})
+
+    def _load_serialized_cookies(self, cookie_data):
+        self.cookies.clear()
+        for cookie in json.loads(cookie_data).get("cookies", []):
+            self.cookies.set_cookie(self._cookie_from_dict(cookie))
+
+    def _run_keychain(self, *args, input_text=None):
+        if sys.platform != "darwin":
+            raise ClipperCardError("macOS Keychain cookie storage is only supported on macOS")
+        kwargs = {}
+        if input_text is not None:
+            kwargs["input"] = input_text
+        return subprocess.run(
+            ["security", *args],
+            check=False,
+            capture_output=True,
+            text=True,
+            **kwargs,
+        )
+
+    def _load_keychain_cookies(self):
+        result = self._run_keychain(
+            "find-generic-password",
+            "-s",
+            self.COOKIE_STORE_SERVICE,
+            "-a",
+            self._keychain_account,
+            "-w",
+        )
+        if result.returncode != 0:
+            logger.debug(f"No saved cookies found in macOS Keychain for {self._keychain_account}")
+            return False
+        try:
+            self._load_serialized_cookies(result.stdout)
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+            logger.warning(f"Keychain cookies for {self._keychain_account} are unreadable; ignoring them")
+            return False
+        loaded_cookies = list(self.cookies)
+        logger.debug(f"Loaded {len(loaded_cookies)} cookies from macOS Keychain")
+        return bool(loaded_cookies)
+
+    def _save_keychain_cookies(self):
+        result = self._run_keychain(
+            "add-generic-password",
+            "-U",
+            "-s",
+            self.COOKIE_STORE_SERVICE,
+            "-a",
+            self._keychain_account,
+            "-w",
+            input_text=self._serialize_cookies(),
+        )
+        if result.returncode != 0:
+            raise ClipperCardError(f"Unable to save cookies to macOS Keychain: {result.stderr.strip()}")
+        logger.debug(f"Saved cookies to macOS Keychain for {self._keychain_account}")
+
+    def _clear_keychain_cookies(self):
+        self.cookies.clear()
+        result = self._run_keychain(
+            "delete-generic-password",
+            "-s",
+            self.COOKIE_STORE_SERVICE,
+            "-a",
+            self._keychain_account,
+        )
+        if result.returncode == 0:
+            logger.debug(f"Removed stale cookies from macOS Keychain for {self._keychain_account}")
+
+    def _load_file_cookie_jar(self):
         if not self._cookie_jar_path.exists():
             return False
         try:
@@ -110,13 +236,34 @@ class ClipperCardWebSession(requests.Session):
         logger.debug(f"Loaded {len(loaded_cookies)} cookies from {self._cookie_jar_path}")
         return bool(loaded_cookies)
 
+    def _migrate_file_cookies_to_keychain(self):
+        if not self._load_file_cookie_jar():
+            return False
+        self._save_keychain_cookies()
+        logger.debug(f"Migrated file cookies from {self._cookie_jar_path} to macOS Keychain")
+        return True
+
+    def _load_cookie_jar(self):
+        if self._cookie_store == "keychain":
+            return self._load_keychain_cookies() or self._migrate_file_cookies_to_keychain()
+
+        return self._load_file_cookie_jar()
+
     def _save_cookie_jar(self):
+        if self._cookie_store == "keychain":
+            self._save_keychain_cookies()
+            return
+
         self._cookie_jar_path.parent.mkdir(parents=True, exist_ok=True)
         self.cookies.save(ignore_discard=True, ignore_expires=True)
         self._cookie_jar_path.chmod(0o600)
         logger.debug(f"Saved cookies to {self._cookie_jar_path}")
 
     def _clear_cookie_jar(self):
+        if self._cookie_store == "keychain":
+            self._clear_keychain_cookies()
+            return
+
         self.cookies.clear()
         if self._cookie_jar_path.exists():
             self._cookie_jar_path.unlink()

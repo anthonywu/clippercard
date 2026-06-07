@@ -1,9 +1,11 @@
 from pathlib import Path
+from subprocess import CompletedProcess
 from unittest.mock import patch
 
+import pytest
 from requests.cookies import cookiejar_from_dict, create_cookie
 
-from clippercard.client import ClipperCardWebSession
+from clippercard.client import ClipperCardError, ClipperCardWebSession
 
 
 class DummyResponse:
@@ -146,6 +148,112 @@ def test_login_saves_cookie_jar_after_successful_login(tmp_path):
 
     assert reused_urls == [ClipperCardWebSession.DASHBOARD_URL]
     assert reused_session.reused_cookies is True
+
+
+def test_keychain_cookie_store_saves_and_loads_cookies():
+    saved = {}
+
+    def fake_run(args, check=False, capture_output=False, text=False, **kwargs):
+        stdin_payload = kwargs.get("input")
+        assert check is False
+        assert capture_output is True
+        assert text is True
+        if args[1] == "add-generic-password":
+            saved["command"] = args
+            saved["payload"] = stdin_payload
+            return CompletedProcess(args, 0, "", "")
+        if args[1] == "find-generic-password":
+            return CompletedProcess(args, 0, saved["payload"], "")
+        raise AssertionError(f"Unexpected security command: {args}")
+
+    session = ClipperCardWebSession(cookie_store="keychain", keychain_account="default")
+    session.cookies.set_cookie(create_cookie("JSESSIONID", "fresh-session", domain="www.clippercard.com", path="/"))
+
+    with (
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+    ):
+        session._save_cookie_jar()
+
+        reused_session = ClipperCardWebSession(cookie_store="keychain", keychain_account="default")
+        loaded = reused_session._load_cookie_jar()
+
+    assert saved["command"][:8] == [
+        "security",
+        "add-generic-password",
+        "-U",
+        "-s",
+        ClipperCardWebSession.COOKIE_STORE_SERVICE,
+        "-a",
+        "default",
+        "-w",
+    ]
+    assert "fresh-session" not in saved["command"]
+    assert loaded is True
+    assert reused_session.cookies._cookies["www.clippercard.com"]["/"]["JSESSIONID"].value == "fresh-session"
+
+
+def test_keychain_cookie_store_migrates_existing_file_cookies(tmp_path):
+    cookie_jar_path = tmp_path / "clippercard.cookies"
+    seed_session = ClipperCardWebSession(cookie_jar_path=cookie_jar_path)
+    seed_session.cookies.set_cookie(
+        create_cookie("JSESSIONID", "saved-session", domain="www.clippercard.com", path="/")
+    )
+    seed_session._save_cookie_jar()
+
+    saved = {}
+
+    def fake_run(args, check=False, capture_output=False, text=False, **kwargs):
+        stdin_payload = kwargs.get("input")
+        assert check is False
+        assert capture_output is True
+        assert text is True
+        if args[1] == "find-generic-password":
+            return CompletedProcess(args, 44, "", "The specified item could not be found.")
+        if args[1] == "add-generic-password":
+            saved["command"] = args
+            saved["payload"] = stdin_payload
+            return CompletedProcess(args, 0, "", "")
+        raise AssertionError(f"Unexpected security command: {args}")
+
+    session = ClipperCardWebSession(
+        cookie_jar_path=cookie_jar_path,
+        cookie_store="keychain",
+        keychain_account="default",
+    )
+
+    with (
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+    ):
+        loaded = session._load_cookie_jar()
+
+    assert loaded is True
+    assert saved["command"][:8] == [
+        "security",
+        "add-generic-password",
+        "-U",
+        "-s",
+        ClipperCardWebSession.COOKIE_STORE_SERVICE,
+        "-a",
+        "default",
+        "-w",
+    ]
+    assert "saved-session" not in saved["command"]
+    assert session.cookies._cookies["www.clippercard.com"]["/"]["JSESSIONID"].value == "saved-session"
+    assert cookie_jar_path.exists()
+
+
+def test_keychain_cookie_store_requires_macos():
+    session = ClipperCardWebSession(cookie_store="keychain", keychain_account="default")
+
+    with (
+        patch("clippercard.client.sys.platform", "linux"),
+        pytest.raises(ClipperCardError) as exc,
+    ):
+        session._load_cookie_jar()
+
+    assert str(exc.value) == "macOS Keychain cookie storage is only supported on macOS"
 
 
 def test_profile_info_fetches_and_parses_profile_page(tmp_path):

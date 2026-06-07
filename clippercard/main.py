@@ -4,9 +4,11 @@ ClipperCard Client - CLI entry point
 
 import argparse
 import configparser
+import json
 import logging
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,6 +18,9 @@ import clippercard.porcelain
 
 class ClipperCardCommandError(Exception):
     pass
+
+
+_CREDENTIAL_STORE_SERVICE = "clippercard.credentials"
 
 
 def _init_config_file(config_file_path):
@@ -31,7 +36,62 @@ password = <replace_with_your_password>
     print(f"Created config file: {config_file_path}")
 
 
-def _get_client_auth(args):
+def _run_keychain(*args, input_text=None):
+    if sys.platform != "darwin":
+        raise ClipperCardCommandError("macOS Keychain credential storage is only supported on macOS")
+    kwargs = {}
+    if input_text is not None:
+        kwargs["input"] = input_text
+    return subprocess.run(
+        ["security", *args],
+        check=False,
+        capture_output=True,
+        text=True,
+        **kwargs,
+    )
+
+
+def _load_keychain_auth(account):
+    result = _run_keychain(
+        "find-generic-password",
+        "-s",
+        _CREDENTIAL_STORE_SERVICE,
+        "-a",
+        account,
+        "-w",
+    )
+    if result.returncode != 0:
+        return None
+    try:
+        credentials = json.loads(result.stdout)
+        return credentials["username"], credentials["password"]
+    except (KeyError, TypeError, json.JSONDecodeError) as err:
+        raise ClipperCardCommandError(f"Keychain credentials for account {account!r} are unreadable") from err
+
+
+def _keychain_item_exists(service, account):
+    if sys.platform != "darwin":
+        return False
+    result = _run_keychain("find-generic-password", "-s", service, "-a", account)
+    return result.returncode == 0
+
+
+def _save_keychain_auth(account, username, password):
+    result = _run_keychain(
+        "add-generic-password",
+        "-U",
+        "-s",
+        _CREDENTIAL_STORE_SERVICE,
+        "-a",
+        account,
+        "-w",
+        input_text=json.dumps({"username": username, "password": password}),
+    )
+    if result.returncode != 0:
+        raise ClipperCardCommandError(f"Unable to save credentials to macOS Keychain: {result.stderr.strip()}")
+
+
+def _get_config_or_arg_auth(args):
     """
     Finds/parses the username and password from either the args or a config file.
 
@@ -64,6 +124,65 @@ def _get_client_auth(args):
     return username, password
 
 
+def _config_auth_available(args):
+    username, password = args.username, args.password
+    if username and password:
+        return True
+
+    config_file_path = os.path.expanduser(args.config)
+    if not os.path.exists(config_file_path):
+        return False
+
+    parser = configparser.ConfigParser()
+    parser.read(config_file_path)
+    try:
+        section = args.account
+        parser.get(section, "username")
+        parser.get(section, "password")
+    except (configparser.NoSectionError, configparser.NoOptionError):
+        return False
+    return True
+
+
+def _arg_auth_available(args):
+    return bool(args.username and args.password)
+
+
+def _get_client_auth_with_source(args):
+    if args.credential_store == "keychain":
+        if _arg_auth_available(args):
+            return _get_config_or_arg_auth(args), "config"
+        credentials = _load_keychain_auth(args.account)
+        if credentials:
+            return credentials, "keychain"
+        return _get_config_or_arg_auth(args), "config"
+
+    if args.credential_store is None:
+        if _config_auth_available(args):
+            return _get_config_or_arg_auth(args), "config"
+        credentials = _load_keychain_auth(args.account)
+        if credentials:
+            return credentials, "keychain"
+
+    return _get_config_or_arg_auth(args), "config"
+
+
+def _get_client_auth(args):
+    credentials, source = _get_client_auth_with_source(args)
+    args._credential_source = source
+    return credentials
+
+
+def _resolve_credential_store(args):
+    if args.credential_store is not None:
+        return args.credential_store
+    if _config_auth_available(args):
+        return "config"
+    if _keychain_item_exists(_CREDENTIAL_STORE_SERVICE, args.account):
+        return "keychain"
+    return "config"
+
+
 def _cookie_jar_path_for_account(account, cookie_jar_path=None):
     """
     Returns the cookie jar path for a config section.
@@ -85,6 +204,18 @@ def _cookie_jar_path_for_account(account, cookie_jar_path=None):
     else:
         cookie_name = f"{base_path.name}.{safe_account}"
     return base_path.with_name(cookie_name)
+
+
+def _resolve_cookie_store(args, cookie_jar_path=None):
+    if args.cookie_store is not None:
+        return args.cookie_store
+
+    cookie_jar_path = cookie_jar_path or _cookie_jar_path_for_account(args.account)
+    if cookie_jar_path.exists():
+        return "file"
+    if _keychain_item_exists(clippercard.Session.COOKIE_STORE_SERVICE, args.account):
+        return "keychain"
+    return "file"
 
 
 def _build_parser():
@@ -122,6 +253,20 @@ def _build_parser():
     )
     auth_group.add_argument("--username", help="Login username (instead of config file)")
     auth_group.add_argument("--password", help="Login password (instead of config file)")
+    auth_group.add_argument(
+        "--credential-store",
+        choices=("config", "keychain"),
+        default=None,
+        help="Login credential storage backend (default: config, or keychain when config is unavailable)",
+    )
+
+    cookie_group = summary.add_argument_group("cookie storage")
+    cookie_group.add_argument(
+        "--cookie-store",
+        choices=("file", "keychain"),
+        default=None,
+        help="Saved cookie storage backend (default: file, or keychain when the file jar is unavailable)",
+    )
 
     return parser
 
@@ -139,16 +284,26 @@ def main():
         sys.exit(1)
 
     try:
+        cookie_jar_path = _cookie_jar_path_for_account(args.account)
+        credential_store = _resolve_credential_store(args)
+        cookie_store = _resolve_cookie_store(args, cookie_jar_path=cookie_jar_path)
+        args.credential_store = credential_store
+        args.cookie_store = cookie_store
         username, password = _get_client_auth(args)
         session = clippercard.Session(
             username,
             password,
-            cookie_jar_path=_cookie_jar_path_for_account(args.account),
+            cookie_jar_path=cookie_jar_path,
+            cookie_store=cookie_store,
+            keychain_account=args.account,
         )
+        if credential_store == "keychain" and getattr(args, "_credential_source", "config") != "keychain":
+            _save_keychain_auth(args.account, username, password)
         if args.command == "summary":
             output = args.output or ("table" if sys.stdout.isatty() else "json")
             if session.reused_cookies:
-                cookie_message = f"Reusing saved cookies from {session.cookie_jar_path}"
+                cookie_storage_label = getattr(session, "cookie_storage_label", session.cookie_jar_path)
+                cookie_message = f"Reusing saved cookies from {cookie_storage_label}"
                 if output == "json":
                     print(cookie_message, file=sys.stderr)
                 else:
