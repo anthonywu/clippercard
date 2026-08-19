@@ -282,7 +282,11 @@ def main():
             cookie_store=cookie_store,
             keychain_account=args.account,
         )
-        if credential_store == "keychain" and getattr(args, "_credential_source", "config") != "keychain":
+        if (
+            credential_store == "keychain"
+            and getattr(args, "_credential_source", "config") != "keychain"
+            and not session.reused_cookies
+        ):
             _save_keychain_auth(args.account, username, password)
         if args.command == "summary":
             output = args.output or ("table" if sys.stdout.isatty() else "json")

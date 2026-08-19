@@ -9,7 +9,7 @@ import pytest
 
 import clippercard.main as main
 import clippercard.test_cli as test_cli
-from clippercard.client import ClipperCardError
+from clippercard.client import ClipperCardAuthError, ClipperCardError
 
 
 def test_cookie_jar_path_for_default_account_keeps_legacy_filename(tmp_path):
@@ -370,6 +370,98 @@ def test_summary_does_not_resave_credentials_loaded_from_keychain():
         main.main()
 
     assert commands_seen == ["find-generic-password"]
+
+
+def test_summary_does_not_save_credentials_when_session_reuses_cookies():
+    expected_cookie_path = Path("/tmp/auth.cookies")
+
+    class DummySession:
+        reused_cookies = True
+        cookie_jar_path = expected_cookie_path
+        profile_info = None
+        cards = []
+
+    commands_seen = []
+
+    def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
+        commands_seen.append(command[1])
+        if command[1] == "find-generic-password":
+            return CompletedProcess(command, 44, "", "not found")
+        if command[1] == "add-generic-password":
+            raise AssertionError("Credentials must not be saved when login was skipped via cookie reuse")
+        raise AssertionError(f"Unexpected security command: {command}")
+
+    with (
+        patch.object(
+            sys,
+            "argv",
+            [
+                "clippercard",
+                "summary",
+                "--credential-store",
+                "keychain",
+                "--cookie-store",
+                "file",
+                "--username",
+                "person@example.com",
+                "--password",
+                "maybe-wrong",
+            ],
+        ),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
+        patch("clippercard.main.clippercard.Session", return_value=DummySession()),
+        patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
+        patch("clippercard.main.sys.stdout.isatty", return_value=True),
+        patch("clippercard.main.print"),
+    ):
+        main.main()
+
+    assert "add-generic-password" not in commands_seen
+
+
+def test_summary_does_not_save_credentials_when_login_fails():
+    expected_cookie_path = Path("/tmp/auth.cookies")
+    commands_seen = []
+
+    def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
+        commands_seen.append(command[1])
+        if command[1] == "find-generic-password":
+            return CompletedProcess(command, 44, "", "not found")
+        if command[1] == "add-generic-password":
+            raise AssertionError("Credentials must not be saved when login fails")
+        raise AssertionError(f"Unexpected security command: {command}")
+
+    with (
+        patch.object(
+            sys,
+            "argv",
+            [
+                "clippercard",
+                "summary",
+                "--credential-store",
+                "keychain",
+                "--cookie-store",
+                "file",
+                "--username",
+                "person@example.com",
+                "--password",
+                "wrong-password",
+            ],
+        ),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
+        patch(
+            "clippercard.main.clippercard.Session",
+            side_effect=ClipperCardAuthError("Authentication failed - credentials were rejected"),
+        ),
+        pytest.raises(SystemExit, match="Authentication failed - credentials were rejected"),
+    ):
+        main.main()
+
+    assert "add-generic-password" not in commands_seen
 
 
 def test_summary_can_output_json_without_cookie_message_on_stdout(capsys):
