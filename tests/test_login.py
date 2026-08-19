@@ -154,13 +154,12 @@ def test_keychain_cookie_store_saves_and_loads_cookies():
     saved = {}
 
     def fake_run(args, check=False, capture_output=False, text=False, **kwargs):
-        stdin_payload = kwargs.get("input")
         assert check is False
         assert capture_output is True
         assert text is True
         if args[1] == "add-generic-password":
             saved["command"] = args
-            saved["payload"] = stdin_payload
+            saved["payload"] = args[-1]
             return CompletedProcess(args, 0, "", "")
         if args[1] == "find-generic-password":
             return CompletedProcess(args, 0, saved["payload"], "")
@@ -178,7 +177,7 @@ def test_keychain_cookie_store_saves_and_loads_cookies():
         reused_session = ClipperCardWebSession(cookie_store="keychain", keychain_account="default")
         loaded = reused_session._load_cookie_jar()
 
-    assert saved["command"][:8] == [
+    assert saved["command"] == [
         "security",
         "add-generic-password",
         "-U",
@@ -187,8 +186,8 @@ def test_keychain_cookie_store_saves_and_loads_cookies():
         "-a",
         "default",
         "-w",
+        saved["payload"],
     ]
-    assert "fresh-session" not in saved["command"]
     assert loaded is True
     assert reused_session.cookies._cookies["www.clippercard.com"]["/"]["JSESSIONID"].value == "fresh-session"
 
@@ -204,7 +203,6 @@ def test_keychain_cookie_store_migrates_existing_file_cookies(tmp_path):
     saved = {}
 
     def fake_run(args, check=False, capture_output=False, text=False, **kwargs):
-        stdin_payload = kwargs.get("input")
         assert check is False
         assert capture_output is True
         assert text is True
@@ -212,7 +210,7 @@ def test_keychain_cookie_store_migrates_existing_file_cookies(tmp_path):
             return CompletedProcess(args, 44, "", "The specified item could not be found.")
         if args[1] == "add-generic-password":
             saved["command"] = args
-            saved["payload"] = stdin_payload
+            saved["payload"] = args[-1]
             return CompletedProcess(args, 0, "", "")
         raise AssertionError(f"Unexpected security command: {args}")
 
@@ -229,7 +227,7 @@ def test_keychain_cookie_store_migrates_existing_file_cookies(tmp_path):
         loaded = session._load_cookie_jar()
 
     assert loaded is True
-    assert saved["command"][:8] == [
+    assert saved["command"] == [
         "security",
         "add-generic-password",
         "-U",
@@ -238,8 +236,8 @@ def test_keychain_cookie_store_migrates_existing_file_cookies(tmp_path):
         "-a",
         "default",
         "-w",
+        saved["payload"],
     ]
-    assert "saved-session" not in saved["command"]
     assert session.cookies._cookies["www.clippercard.com"]["/"]["JSESSIONID"].value == "saved-session"
     assert cookie_jar_path.exists()
 

@@ -356,12 +356,11 @@ def test_summary_saves_credentials_to_keychain_after_login(capsys):
     saved = {}
 
     def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
-        stdin_payload = kwargs.get("input")
         if command[1] == "find-generic-password":
             return CompletedProcess(command, 44, "", "not found")
         if command[1] == "add-generic-password":
             saved["command"] = command
-            saved["payload"] = stdin_payload
+            saved["payload"] = command[-1]
             return CompletedProcess(command, 0, "", "")
         raise AssertionError(f"Unexpected security command: {command}")
 
@@ -391,7 +390,7 @@ def test_summary_saves_credentials_to_keychain_after_login(capsys):
     ):
         main.main()
 
-    assert saved["command"][:8] == [
+    assert saved["command"] == [
         "security",
         "add-generic-password",
         "-U",
@@ -400,9 +399,8 @@ def test_summary_saves_credentials_to_keychain_after_login(capsys):
         "-a",
         "default",
         "-w",
+        saved["payload"],
     ]
-    assert "person@example.com" not in saved["command"]
-    assert "supersecret" not in saved["command"]
     assert json.loads(saved["payload"]) == {"username": "person@example.com", "password": "supersecret"}
     output = capsys.readouterr()
     assert "Saved login credentials to macOS Keychain." in output.out

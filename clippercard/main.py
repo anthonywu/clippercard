@@ -73,7 +73,7 @@ def _save_keychain_auth(account, username, password):
         "-a",
         account,
         "-w",
-        input_text=json.dumps({"username": username, "password": password}),
+        json.dumps({"username": username, "password": password}),
     )
     if result.returncode != 0:
         raise ClipperCardCommandError(f"Unable to save credentials to macOS Keychain: {result.stderr.strip()}")

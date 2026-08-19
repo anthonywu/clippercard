@@ -50,18 +50,14 @@ class ClipperCardContentError(ClipperCardError):
     """unable to recognize and parse web content"""
 
 
-def run_keychain(*args, input_text=None):
+def run_keychain(*args):
     if sys.platform != "darwin":
         raise ClipperCardError("macOS Keychain storage is only supported on macOS")
-    kwargs = {}
-    if input_text is not None:
-        kwargs["input"] = input_text
     return subprocess.run(
         ["security", *args],
         check=False,
         capture_output=True,
         text=True,
-        **kwargs,
     )
 
 
@@ -207,7 +203,7 @@ class ClipperCardWebSession(requests.Session):
             "-a",
             self._keychain_account,
             "-w",
-            input_text=self._serialize_cookies(),
+            self._serialize_cookies(),
         )
         if result.returncode != 0:
             raise ClipperCardError(f"Unable to save cookies to macOS Keychain: {result.stderr.strip()}")
