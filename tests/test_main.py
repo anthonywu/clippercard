@@ -1,11 +1,15 @@
+import json
 import sys
 from pathlib import Path
+from subprocess import CompletedProcess
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
 
 import clippercard.main as main
 import clippercard.test_cli as test_cli
+from clippercard.client import ClipperCardAuthError, ClipperCardError
 
 
 def test_cookie_jar_path_for_default_account_keeps_legacy_filename(tmp_path):
@@ -29,6 +33,310 @@ def test_cookie_jar_path_for_named_account_sanitizes_section_name(tmp_path):
     )
 
 
+def test_get_client_auth_loads_credentials_from_keychain():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store="keychain",
+        username=None,
+        password=None,
+    )
+
+    def fake_run(command, check=False, capture_output=False, text=False):
+        assert command == [
+            "security",
+            "find-generic-password",
+            "-s",
+            main._CREDENTIAL_STORE_SERVICE,
+            "-a",
+            "default",
+            "-w",
+        ]
+        assert check is False
+        assert capture_output is True
+        assert text is True
+        return CompletedProcess(
+            command,
+            0,
+            json.dumps({"username": "person@example.com", "password": "supersecret"}),
+            "",
+        )
+
+    with (
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+    ):
+        assert main._get_client_auth(args) == ("person@example.com", "supersecret")
+
+
+def test_get_client_auth_uses_explicit_credentials_before_keychain():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store="keychain",
+        username="fresh@example.com",
+        password="freshsecret",
+    )
+
+    with patch("clippercard.main._load_keychain_auth") as load_keychain_auth:
+        assert main._get_client_auth(args) == ("fresh@example.com", "freshsecret")
+
+    load_keychain_auth.assert_not_called()
+    assert args._credential_source == "config"
+
+
+def test_get_client_auth_prompts_for_password_when_username_is_set():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store="keychain",
+        username="fresh@example.com",
+        password=None,
+    )
+
+    with (
+        patch("clippercard.main._load_keychain_auth") as load_keychain_auth,
+        patch("clippercard.main._read_password", return_value="pasted-secret") as read_password,
+    ):
+        assert main._get_client_auth(args) == ("fresh@example.com", "pasted-secret")
+
+    read_password.assert_called_once_with("fresh@example.com")
+    load_keychain_auth.assert_not_called()
+    assert args.password == "pasted-secret"
+    assert args._credential_source == "config"
+
+
+def test_resolve_credential_store_treats_username_as_config_auth():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store=None,
+        username="fresh@example.com",
+        password=None,
+    )
+
+    with patch("clippercard.main._keychain_item_exists", return_value=True):
+        assert main._resolve_credential_store(args) == "config"
+
+
+def test_read_password_uses_getpass_on_a_tty():
+    with (
+        patch("clippercard.main.sys.stdin.isatty", return_value=True),
+        patch("clippercard.main.getpass.getpass", return_value="pasted-secret") as getpass_mock,
+    ):
+        assert main._read_password("fresh@example.com") == "pasted-secret"
+
+    getpass_mock.assert_called_once_with("Paste Clipper password for fresh@example.com: ")
+
+
+def test_read_password_reads_a_line_from_piped_stdin():
+    stdin = type("Stdin", (), {"isatty": lambda self: False, "readline": lambda self: "pasted-secret\n"})()
+
+    with (
+        patch("clippercard.main.sys.stdin", stdin),
+        patch("clippercard.main.print") as print_mock,
+    ):
+        assert main._read_password("fresh@example.com") == "pasted-secret"
+
+    print_mock.assert_called_once_with(
+        "Paste Clipper password for fresh@example.com: ",
+        end="",
+        file=sys.stderr,
+        flush=True,
+    )
+
+
+def test_read_password_rejects_an_empty_value():
+    with (
+        patch("clippercard.main.sys.stdin.isatty", return_value=True),
+        patch("clippercard.main.getpass.getpass", return_value=""),
+        pytest.raises(main.ClipperCardCommandError, match="Password is required"),
+    ):
+        main._read_password("fresh@example.com")
+
+
+def test_get_client_auth_returns_config_credentials_when_keychain_is_empty(tmp_path):
+    config_path = tmp_path / "credentials.ini"
+    config_path.write_text(
+        """\
+[other]
+username = person@example.com
+password = supersecret
+"""
+    )
+    args = SimpleNamespace(
+        account="other",
+        config=str(config_path),
+        credential_store="keychain",
+        username=None,
+        password=None,
+    )
+    commands_seen = []
+
+    def fake_run(command, check=False, capture_output=False, text=False):
+        assert check is False
+        assert capture_output is True
+        assert text is True
+        commands_seen.append(command[1])
+        if command[1] == "find-generic-password":
+            return CompletedProcess(command, 44, "", "The specified item could not be found.")
+        raise AssertionError(f"Unexpected security command: {command}")
+
+    with (
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+    ):
+        assert main._get_client_auth(args) == ("person@example.com", "supersecret")
+
+    assert commands_seen == ["find-generic-password"]
+
+
+def test_get_client_auth_keychain_requires_macos():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store="keychain",
+        username=None,
+        password=None,
+    )
+
+    with (
+        patch("clippercard.client.sys.platform", "linux"),
+        pytest.raises(ClipperCardError) as exc,
+    ):
+        main._get_client_auth(args)
+
+    assert str(exc.value) == "macOS Keychain storage is only supported on macOS"
+
+
+def test_get_client_auth_uses_keychain_when_config_auth_is_missing():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store=None,
+        username=None,
+        password=None,
+    )
+
+    with (
+        patch("clippercard.main._config_auth_available", return_value=False),
+        patch("clippercard.main._load_keychain_auth", return_value=("person@example.com", "supersecret")),
+    ):
+        assert main._get_client_auth(args) == ("person@example.com", "supersecret")
+
+
+def test_resolve_credential_store_falls_back_to_keychain_when_config_auth_is_missing():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store=None,
+        username=None,
+        password=None,
+    )
+
+    with (
+        patch("clippercard.main._config_auth_available", return_value=False),
+        patch("clippercard.main._keychain_item_exists", return_value=True),
+    ):
+        assert main._resolve_credential_store(args) == "keychain"
+
+
+def test_resolve_cookie_store_falls_back_to_keychain_when_cookie_file_is_missing(tmp_path):
+    args = SimpleNamespace(account="other", cookie_store=None)
+    expected_cookie_path = tmp_path / "auth.other.cookies"
+
+    with (
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
+        patch("clippercard.main._keychain_item_exists", return_value=True),
+    ):
+        assert main._resolve_cookie_store(args) == "keychain"
+
+
+def test_resolve_credential_store_uses_config_file_preference(tmp_path):
+    config_path = tmp_path / "credentials.ini"
+    config_path.write_text(
+        """\
+[default]
+username = person@example.com
+password = supersecret
+credential_store = keychain
+"""
+    )
+    args = SimpleNamespace(
+        account="default",
+        config=str(config_path),
+        credential_store=None,
+        username=None,
+        password=None,
+    )
+
+    with patch("clippercard.main._keychain_item_exists", return_value=False):
+        assert main._resolve_credential_store(args) == "keychain"
+
+
+def test_resolve_cookie_store_uses_config_file_preference(tmp_path):
+    config_path = tmp_path / "credentials.ini"
+    config_path.write_text(
+        """\
+[default]
+username = person@example.com
+password = supersecret
+cookie_store = keychain
+"""
+    )
+    cookie_jar_path = tmp_path / "auth.cookies"
+    cookie_jar_path.write_text("# leftover cookie file\n")
+    args = SimpleNamespace(account="default", config=str(config_path), cookie_store=None)
+
+    assert main._resolve_cookie_store(args, cookie_jar_path=cookie_jar_path) == "keychain"
+
+
+def test_resolve_store_flags_override_config_file_preference(tmp_path):
+    config_path = tmp_path / "credentials.ini"
+    config_path.write_text(
+        """\
+[default]
+username = person@example.com
+password = supersecret
+credential_store = keychain
+cookie_store = keychain
+"""
+    )
+    args = SimpleNamespace(
+        account="default",
+        config=str(config_path),
+        credential_store="config",
+        cookie_store="file",
+        username=None,
+        password=None,
+    )
+
+    assert main._resolve_credential_store(args) == "config"
+    assert main._resolve_cookie_store(args) == "file"
+
+
+def test_resolve_credential_store_rejects_invalid_config_value(tmp_path):
+    config_path = tmp_path / "credentials.ini"
+    config_path.write_text(
+        """\
+[default]
+username = person@example.com
+password = supersecret
+credential_store = vault
+"""
+    )
+    args = SimpleNamespace(
+        account="default",
+        config=str(config_path),
+        credential_store=None,
+        username=None,
+        password=None,
+    )
+
+    with pytest.raises(main.ClipperCardCommandError, match="Invalid credential_store 'vault'"):
+        main._resolve_credential_store(args)
+
+
 def test_summary_uses_account_specific_cookie_jar_path():
     expected_cookie_path = Path("/tmp/auth.other.cookies")
 
@@ -39,7 +347,11 @@ def test_summary_uses_account_specific_cookie_jar_path():
         cards = []
 
     with (
-        patch.object(sys, "argv", ["clippercard", "summary", "--account", "other"]),
+        patch.object(
+            sys,
+            "argv",
+            ["clippercard", "summary", "--account", "other", "--credential-store", "config", "--cookie-store", "file"],
+        ),
         patch("clippercard.main._get_client_auth", return_value=("person@example.com", "supersecret")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path) as cookie_path_mock,
         patch("clippercard.main.clippercard.Session", return_value=DummySession()) as session_mock,
@@ -54,8 +366,257 @@ def test_summary_uses_account_specific_cookie_jar_path():
         "person@example.com",
         "supersecret",
         cookie_jar_path=expected_cookie_path,
+        cookie_store="file",
+        keychain_account="other",
     )
     print_mock.assert_called_once_with("summary output")
+
+
+def test_summary_can_use_keychain_cookie_store():
+    expected_cookie_path = Path("/tmp/auth.other.cookies")
+
+    class DummySession:
+        reused_cookies = False
+        cookie_jar_path = expected_cookie_path
+        profile_info = None
+        cards = []
+
+    with (
+        patch.object(
+            sys,
+            "argv",
+            [
+                "clippercard",
+                "summary",
+                "--account",
+                "other",
+                "--credential-store",
+                "config",
+                "--cookie-store",
+                "keychain",
+            ],
+        ),
+        patch("clippercard.main._get_client_auth", return_value=("person@example.com", "supersecret")),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
+        patch("clippercard.main.clippercard.Session", return_value=DummySession()) as session_mock,
+        patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
+        patch("clippercard.main.sys.stdout.isatty", return_value=True),
+        patch("clippercard.main.print"),
+    ):
+        main.main()
+
+    session_mock.assert_called_once_with(
+        "person@example.com",
+        "supersecret",
+        cookie_jar_path=expected_cookie_path,
+        cookie_store="keychain",
+        keychain_account="other",
+    )
+
+
+def test_summary_saves_credentials_to_keychain_after_login(capsys):
+    expected_cookie_path = Path("/tmp/auth.cookies")
+
+    class DummySession:
+        reused_cookies = False
+        cookie_jar_path = expected_cookie_path
+        profile_info = None
+        cards = []
+
+    saved = {}
+
+    def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
+        if command[1] == "find-generic-password":
+            return CompletedProcess(command, 44, "", "not found")
+        if command[1] == "add-generic-password":
+            saved["command"] = command
+            saved["payload"] = command[-1]
+            return CompletedProcess(command, 0, "", "")
+        raise AssertionError(f"Unexpected security command: {command}")
+
+    with (
+        patch.object(
+            sys,
+            "argv",
+            [
+                "clippercard",
+                "summary",
+                "--credential-store",
+                "keychain",
+                "--cookie-store",
+                "file",
+                "--username",
+                "person@example.com",
+                "--password",
+                "supersecret",
+            ],
+        ),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
+        patch("clippercard.main.clippercard.Session", return_value=DummySession()),
+        patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
+        patch("clippercard.main.sys.stdout.isatty", return_value=True),
+    ):
+        main.main()
+
+    assert saved["command"] == [
+        "security",
+        "add-generic-password",
+        "-U",
+        "-s",
+        main._CREDENTIAL_STORE_SERVICE,
+        "-a",
+        "default",
+        "-w",
+        saved["payload"],
+    ]
+    assert json.loads(saved["payload"]) == {"username": "person@example.com", "password": "supersecret"}
+    output = capsys.readouterr()
+    assert "Saved login credentials to macOS Keychain." in output.out
+    assert "summary output" in output.out
+
+
+def test_summary_does_not_resave_credentials_loaded_from_keychain():
+    expected_cookie_path = Path("/tmp/auth.cookies")
+
+    class DummySession:
+        reused_cookies = False
+        cookie_jar_path = expected_cookie_path
+        profile_info = None
+        cards = []
+
+    commands_seen = []
+
+    def fake_run(command, check=False, capture_output=False, text=False):
+        commands_seen.append(command[1])
+        if command[1] == "find-generic-password":
+            return CompletedProcess(
+                command,
+                0,
+                json.dumps({"username": "person@example.com", "password": "supersecret"}),
+                "",
+            )
+        if command[1] == "add-generic-password":
+            raise AssertionError("Credentials loaded from Keychain should not be saved again")
+        raise AssertionError(f"Unexpected security command: {command}")
+
+    with (
+        patch.object(
+            sys,
+            "argv",
+            [
+                "clippercard",
+                "summary",
+                "--credential-store",
+                "keychain",
+                "--cookie-store",
+                "file",
+            ],
+        ),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
+        patch("clippercard.main.clippercard.Session", return_value=DummySession()),
+        patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
+        patch("clippercard.main.sys.stdout.isatty", return_value=True),
+        patch("clippercard.main.print"),
+    ):
+        main.main()
+
+    assert commands_seen == ["find-generic-password"]
+
+
+def test_summary_does_not_save_credentials_when_session_reuses_cookies():
+    expected_cookie_path = Path("/tmp/auth.cookies")
+
+    class DummySession:
+        reused_cookies = True
+        cookie_jar_path = expected_cookie_path
+        profile_info = None
+        cards = []
+
+    commands_seen = []
+
+    def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
+        commands_seen.append(command[1])
+        if command[1] == "find-generic-password":
+            return CompletedProcess(command, 44, "", "not found")
+        if command[1] == "add-generic-password":
+            raise AssertionError("Credentials must not be saved when login was skipped via cookie reuse")
+        raise AssertionError(f"Unexpected security command: {command}")
+
+    with (
+        patch.object(
+            sys,
+            "argv",
+            [
+                "clippercard",
+                "summary",
+                "--credential-store",
+                "keychain",
+                "--cookie-store",
+                "file",
+                "--username",
+                "person@example.com",
+                "--password",
+                "maybe-wrong",
+            ],
+        ),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
+        patch("clippercard.main.clippercard.Session", return_value=DummySession()),
+        patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
+        patch("clippercard.main.sys.stdout.isatty", return_value=True),
+        patch("clippercard.main.print"),
+    ):
+        main.main()
+
+    assert "add-generic-password" not in commands_seen
+
+
+def test_summary_does_not_save_credentials_when_login_fails():
+    expected_cookie_path = Path("/tmp/auth.cookies")
+    commands_seen = []
+
+    def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
+        commands_seen.append(command[1])
+        if command[1] == "find-generic-password":
+            return CompletedProcess(command, 44, "", "not found")
+        if command[1] == "add-generic-password":
+            raise AssertionError("Credentials must not be saved when login fails")
+        raise AssertionError(f"Unexpected security command: {command}")
+
+    with (
+        patch.object(
+            sys,
+            "argv",
+            [
+                "clippercard",
+                "summary",
+                "--credential-store",
+                "keychain",
+                "--cookie-store",
+                "file",
+                "--username",
+                "person@example.com",
+                "--password",
+                "wrong-password",
+            ],
+        ),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
+        patch(
+            "clippercard.main.clippercard.Session",
+            side_effect=ClipperCardAuthError("Authentication failed - credentials were rejected"),
+        ),
+        pytest.raises(SystemExit, match="Authentication failed - credentials were rejected"),
+    ):
+        main.main()
+
+    assert "add-generic-password" not in commands_seen
 
 
 def test_summary_can_output_json_without_cookie_message_on_stdout(capsys):
@@ -68,7 +629,11 @@ def test_summary_can_output_json_without_cookie_message_on_stdout(capsys):
         cards = []
 
     with (
-        patch.object(sys, "argv", ["clippercard", "summary", "--output", "json"]),
+        patch.object(
+            sys,
+            "argv",
+            ["clippercard", "summary", "--output", "json", "--credential-store", "config", "--cookie-store", "file"],
+        ),
         patch("clippercard.main._get_client_auth", return_value=("person@example.com", "supersecret")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),
@@ -91,7 +656,11 @@ def test_summary_defaults_to_json_when_stdout_is_piped(capsys):
         cards = []
 
     with (
-        patch.object(sys, "argv", ["clippercard", "summary"]),
+        patch.object(
+            sys,
+            "argv",
+            ["clippercard", "summary", "--credential-store", "config", "--cookie-store", "file"],
+        ),
         patch("clippercard.main._get_client_auth", return_value=("person@example.com", "supersecret")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),
@@ -115,7 +684,11 @@ def test_summary_output_table_overrides_pipe_detection(capsys):
         cards = []
 
     with (
-        patch.object(sys, "argv", ["clippercard", "summary", "--output", "table"]),
+        patch.object(
+            sys,
+            "argv",
+            ["clippercard", "summary", "--output", "table", "--credential-store", "config", "--cookie-store", "file"],
+        ),
         patch("clippercard.main._get_client_auth", return_value=("person@example.com", "supersecret")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),

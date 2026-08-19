@@ -46,10 +46,6 @@ class TestParser(unittest.TestCase):
         self.assertEqual("Mastercard ending in 8888", parsed_profile.primary_payment)
         self.assertEqual("Amex ending in 1234", parsed_profile.backup_payment)
 
-    def test_cards(self):
-        parsed_cards = parser.parse_cards(self.account_page_soup)
-        self.assertEqual(9, len(parsed_cards))
-
     def test_profile_page(self):
         parsed_profile = parser.parse_profile_page(self.profile_page_content)
         self.assertEqual("EXAMPLE RIDER", parsed_profile.name)

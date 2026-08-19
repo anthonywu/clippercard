@@ -14,10 +14,10 @@ test-all:
     uv run nox -s test_all
 
 lint:
-    uv run nox -s lint
+    uv run ruff check .
 
 format:
-    uv run nox -s format
+    uv run ruff format .
 
 build-dist:
     uv run nox -s build
