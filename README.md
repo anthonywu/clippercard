@@ -115,18 +115,57 @@ $ clippercard summary --account=other
 Non-default accounts keep separate saved login cookies in account-specific files such as
 `~/.config/clippercard/auth.other.cookies`.
 
-On macOS, you can store login credentials and saved cookies in Keychain instead of local files:
+On macOS, you can store login credentials and saved cookies in Keychain instead of local files.
+
+### First-time Keychain setup
+
+Pass the Clipper username once on the command line. Omit `--password` and paste it when prompted
+(hidden on a TTY, or one line on stdin). After a successful password login, the CLI writes those
+credentials into Keychain and prints a confirmation:
+
+```sh
+$ clippercard summary --credential-store keychain --cookie-store keychain \
+    --username goldengate88@example.com
+Paste Clipper password for goldengate88@example.com:
+Saved login credentials to macOS Keychain. You can delete the plaintext username/password from the config file if you no longer need them.
+```
+
+You can still pass `--password` if you want, but that leaves the secret in your shell history.
+
+macOS may prompt to allow the `security` tool to use Keychain. Choose Allow or Always Allow.
+
+Do not skip `--username` on this first run. If Keychain is empty, the CLI otherwise looks for
+`credentials.ini` or offers to create it.
+
+If you already have a `credentials.ini`, you can seed Keychain from that file instead:
 
 ```sh
 $ clippercard summary --credential-store keychain --cookie-store keychain
 ```
 
-To make Keychain the default for later runs, add those choices to the account section:
+Credentials are written only after a real password login succeeds. Cookie reuse does not count,
+because that path never checks the username/password. If you already have a saved cookie file and
+this first run says it is reusing cookies, delete that file and run the command again:
+
+```sh
+$ rm ~/.config/clippercard/auth.cookies
+$ clippercard summary --credential-store keychain --cookie-store keychain \
+    --username goldengate88@example.com
+```
+
+### Later runs
+
+If there is no `credentials.ini`, later runs pick Keychain up automatically:
+
+```sh
+$ clippercard summary
+```
+
+If you keep a config file, set the stores there so you do not need the flags every time. After
+Keychain has the password, you can omit `username` / `password`:
 
 ```ini
 [default]
-username = goldengate88@example.com
-password = hunter2
 credential_store = keychain
 cookie_store = keychain
 ```
@@ -135,16 +174,14 @@ CLI flags still override the config file. If you omit both the flags and the con
 keeps using `credentials.ini` and the cookie file when those exist, and only falls back to Keychain
 when the matching file is missing.
 
+### Keychain item names and cleanup
+
 Keychain items are named `clippercard.credentials` and `clippercard.cookies`, with the account
 section as the Keychain account (`default`, `other`, and so on).
 
-Credentials are written to Keychain only after a real password login succeeds. Cookie reuse does
-not count, because that path never checks the username/password. After a successful write, the CLI
-tells you it is safe to remove the plaintext username/password from the config file.
-
 Cookie migration copies an existing file jar into Keychain the first time that Keychain item is
 missing. It does not delete `credentials.ini` or `auth.cookies`. Leave those files in place until
-you have confirmed Keychain login works.
+you have confirmed Keychain login works, then delete the plaintext password if you want.
 
 To remove saved Keychain items later:
 
