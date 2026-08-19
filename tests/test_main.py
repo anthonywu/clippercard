@@ -182,6 +182,91 @@ def test_resolve_cookie_store_falls_back_to_keychain_when_cookie_file_is_missing
         assert main._resolve_cookie_store(args) == "keychain"
 
 
+def test_resolve_credential_store_uses_config_file_preference(tmp_path):
+    config_path = tmp_path / "credentials.ini"
+    config_path.write_text(
+        """\
+[default]
+username = person@example.com
+password = supersecret
+credential_store = keychain
+"""
+    )
+    args = SimpleNamespace(
+        account="default",
+        config=str(config_path),
+        credential_store=None,
+        username=None,
+        password=None,
+    )
+
+    with patch("clippercard.main._keychain_item_exists", return_value=False):
+        assert main._resolve_credential_store(args) == "keychain"
+
+
+def test_resolve_cookie_store_uses_config_file_preference(tmp_path):
+    config_path = tmp_path / "credentials.ini"
+    config_path.write_text(
+        """\
+[default]
+username = person@example.com
+password = supersecret
+cookie_store = keychain
+"""
+    )
+    cookie_jar_path = tmp_path / "auth.cookies"
+    cookie_jar_path.write_text("# leftover cookie file\n")
+    args = SimpleNamespace(account="default", config=str(config_path), cookie_store=None)
+
+    assert main._resolve_cookie_store(args, cookie_jar_path=cookie_jar_path) == "keychain"
+
+
+def test_resolve_store_flags_override_config_file_preference(tmp_path):
+    config_path = tmp_path / "credentials.ini"
+    config_path.write_text(
+        """\
+[default]
+username = person@example.com
+password = supersecret
+credential_store = keychain
+cookie_store = keychain
+"""
+    )
+    args = SimpleNamespace(
+        account="default",
+        config=str(config_path),
+        credential_store="config",
+        cookie_store="file",
+        username=None,
+        password=None,
+    )
+
+    assert main._resolve_credential_store(args) == "config"
+    assert main._resolve_cookie_store(args) == "file"
+
+
+def test_resolve_credential_store_rejects_invalid_config_value(tmp_path):
+    config_path = tmp_path / "credentials.ini"
+    config_path.write_text(
+        """\
+[default]
+username = person@example.com
+password = supersecret
+credential_store = vault
+"""
+    )
+    args = SimpleNamespace(
+        account="default",
+        config=str(config_path),
+        credential_store=None,
+        username=None,
+        password=None,
+    )
+
+    with pytest.raises(main.ClipperCardCommandError, match="Invalid credential_store 'vault'"):
+        main._resolve_credential_store(args)
+
+
 def test_summary_uses_account_specific_cookie_jar_path():
     expected_cookie_path = Path("/tmp/auth.other.cookies")
 

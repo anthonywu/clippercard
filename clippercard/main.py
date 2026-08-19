@@ -30,6 +30,9 @@ def _init_config_file(config_file_path):
 [default]
 username = <replace_with_your_email>
 password = <replace_with_your_password>
+# Optional on macOS:
+# credential_store = keychain
+# cookie_store = keychain
 """
     with open(config_file_path, "w") as f:
         f.write(template)
@@ -158,9 +161,30 @@ def _get_client_auth(args):
     return credentials
 
 
+def _config_option(args, option):
+    config_file_path = os.path.expanduser(getattr(args, "config", "") or "")
+    if not config_file_path or not os.path.exists(config_file_path):
+        return None
+
+    parser = configparser.ConfigParser()
+    parser.read(config_file_path)
+    try:
+        return parser.get(args.account, option).strip() or None
+    except (configparser.NoSectionError, configparser.NoOptionError):
+        return None
+
+
 def _resolve_credential_store(args):
     if args.credential_store is not None:
         return args.credential_store
+    configured = _config_option(args, "credential_store")
+    if configured is not None:
+        if configured not in {"config", "keychain"}:
+            raise ClipperCardCommandError(
+                f"Invalid credential_store {configured!r} in {os.path.expanduser(args.config)}; "
+                "expected 'config' or 'keychain'"
+            )
+        return configured
     if _config_auth_available(args):
         return "config"
     if _keychain_item_exists(_CREDENTIAL_STORE_SERVICE, args.account):
@@ -194,6 +218,14 @@ def _cookie_jar_path_for_account(account, cookie_jar_path=None):
 def _resolve_cookie_store(args, cookie_jar_path=None):
     if args.cookie_store is not None:
         return args.cookie_store
+    configured = _config_option(args, "cookie_store")
+    if configured is not None:
+        if configured not in {"file", "keychain"}:
+            raise ClipperCardCommandError(
+                f"Invalid cookie_store {configured!r} in {os.path.expanduser(args.config)}; "
+                "expected 'file' or 'keychain'"
+            )
+        return configured
 
     cookie_jar_path = cookie_jar_path or _cookie_jar_path_for_account(args.account)
     if cookie_jar_path.exists():
@@ -242,7 +274,10 @@ def _build_parser():
         "--credential-store",
         choices=("config", "keychain"),
         default=None,
-        help="Login credential storage backend (default: config, or keychain when config is unavailable)",
+        help=(
+            "Login credential storage backend "
+            "(default: credential_store in the config file, else config, or keychain when config is unavailable)"
+        ),
     )
 
     cookie_group = summary.add_argument_group("cookie storage")
@@ -250,7 +285,10 @@ def _build_parser():
         "--cookie-store",
         choices=("file", "keychain"),
         default=None,
-        help="Saved cookie storage backend (default: file, or keychain when the file jar is unavailable)",
+        help=(
+            "Saved cookie storage backend "
+            "(default: cookie_store in the config file, else file, or keychain when the file jar is unavailable)"
+        ),
     )
 
     return parser
