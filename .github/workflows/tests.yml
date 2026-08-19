@@ -1,0 +1,72 @@
+name: Tests and Lint
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Ruff version resolved from uv.lock so lint matches the locked dev dependency.
+      # ruff-action installs standalone ruff (no venv) so the lint job stays fast.
+      - name: Run ruff check
+        uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89  # v4.1.0
+        with:
+          version-file: "uv.lock"
+          args: check .
+
+      - name: Run ruff format check
+        run: ruff format --check .
+
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        include:
+          # One macOS leg on the current version: guards the Keychain
+          # credential/cookie storage paths that only run on darwin.
+          - os: macos-latest
+            python-version: "3.14"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      # setup-uv subsumes setup-python: python-version pins the interpreter,
+      # activate-environment creates + PATH-activates .venv for later steps.
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d  # v10.0.0
+        with:
+          version: "0.12.4"  # pinned uv: makes uv.lock rendering reproducible
+          python-version: ${{ matrix.python-version }}
+          activate-environment: true
+
+      # Lockfile-pinned install (runtime + dev group incl. pytest): dev/CI parity
+      # with `just test`, and --locked fails the job if uv.lock drifts from pyproject.
+      - name: Install dependencies
+        run: uv sync --group dev --locked
+
+      - name: Run tests
+        run: python -m pytest -v

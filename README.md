@@ -51,7 +51,8 @@ Usage
 
 ```python
 import clippercard
-session = clippercard.Session('username', 'password')
+
+session = clippercard.Session("username", "password")
 print(session.profile_info)
 for c in session.cards:
     print(c)
