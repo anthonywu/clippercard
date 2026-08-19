@@ -85,6 +85,76 @@ def test_get_client_auth_uses_explicit_credentials_before_keychain():
     assert args._credential_source == "config"
 
 
+def test_get_client_auth_prompts_for_password_when_username_is_set():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store="keychain",
+        username="fresh@example.com",
+        password=None,
+    )
+
+    with (
+        patch("clippercard.main._load_keychain_auth") as load_keychain_auth,
+        patch("clippercard.main._read_password", return_value="pasted-secret") as read_password,
+    ):
+        assert main._get_client_auth(args) == ("fresh@example.com", "pasted-secret")
+
+    read_password.assert_called_once_with("fresh@example.com")
+    load_keychain_auth.assert_not_called()
+    assert args.password == "pasted-secret"
+    assert args._credential_source == "config"
+
+
+def test_resolve_credential_store_treats_username_as_config_auth():
+    args = SimpleNamespace(
+        account="default",
+        config="/does/not/exist",
+        credential_store=None,
+        username="fresh@example.com",
+        password=None,
+    )
+
+    with patch("clippercard.main._keychain_item_exists", return_value=True):
+        assert main._resolve_credential_store(args) == "config"
+
+
+def test_read_password_uses_getpass_on_a_tty():
+    with (
+        patch("clippercard.main.sys.stdin.isatty", return_value=True),
+        patch("clippercard.main.getpass.getpass", return_value="pasted-secret") as getpass_mock,
+    ):
+        assert main._read_password("fresh@example.com") == "pasted-secret"
+
+    getpass_mock.assert_called_once_with("Paste Clipper password for fresh@example.com: ")
+
+
+def test_read_password_reads_a_line_from_piped_stdin():
+    stdin = type("Stdin", (), {"isatty": lambda self: False, "readline": lambda self: "pasted-secret\n"})()
+
+    with (
+        patch("clippercard.main.sys.stdin", stdin),
+        patch("clippercard.main.print") as print_mock,
+    ):
+        assert main._read_password("fresh@example.com") == "pasted-secret"
+
+    print_mock.assert_called_once_with(
+        "Paste Clipper password for fresh@example.com: ",
+        end="",
+        file=sys.stderr,
+        flush=True,
+    )
+
+
+def test_read_password_rejects_an_empty_value():
+    with (
+        patch("clippercard.main.sys.stdin.isatty", return_value=True),
+        patch("clippercard.main.getpass.getpass", return_value=""),
+        pytest.raises(main.ClipperCardCommandError, match="Password is required"),
+    ):
+        main._read_password("fresh@example.com")
+
+
 def test_get_client_auth_returns_config_credentials_when_keychain_is_empty(tmp_path):
     config_path = tmp_path / "credentials.ini"
     config_path.write_text(

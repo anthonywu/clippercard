@@ -4,6 +4,7 @@ ClipperCard Client - CLI entry point
 
 import argparse
 import configparser
+import getpass
 import json
 import logging
 import os
@@ -79,6 +80,23 @@ def _save_keychain_auth(account, username, password):
         raise ClipperCardCommandError(f"Unable to save credentials to macOS Keychain: {result.stderr.strip()}")
 
 
+def _read_password(username):
+    prompt = f"Paste Clipper password for {username}: "
+    try:
+        if sys.stdin.isatty():
+            password = getpass.getpass(prompt)
+        else:
+            print(prompt, end="", file=sys.stderr, flush=True)
+            password = sys.stdin.readline()
+            if password.endswith("\n"):
+                password = password[:-1]
+    except (EOFError, KeyboardInterrupt) as err:
+        raise ClipperCardCommandError("Password is required") from err
+    if not password:
+        raise ClipperCardCommandError("Password is required")
+    return password
+
+
 def _get_config_or_arg_auth(args):
     """
     Finds/parses the username and password from either the args or a config file.
@@ -86,35 +104,39 @@ def _get_config_or_arg_auth(args):
     :returns: a tuple of (username, password)
     """
     username, password = args.username, args.password
-    if not (username and password):
-        config_file_path = os.path.expanduser(args.config)
-        if not os.path.exists(config_file_path):
-            response = input(f"Config file {config_file_path} does not exist. Create it? (y/n): ").strip().lower()
-            if response == "y":
-                _init_config_file(config_file_path)
-                raise ClipperCardCommandError(
-                    f"Config file created. Please edit {config_file_path} and add your credentials."
-                )
-            else:
-                raise ClipperCardCommandError(
-                    f"Login config file {config_file_path} does not exist. "
-                    "Use --username and --password flags or create a config file."
-                )
-        try:
-            parser = configparser.ConfigParser()
-            parser.read(config_file_path)
-            section = args.account
-            username, password = parser.get(section, "username"), parser.get(section, "password")
-        except configparser.NoSectionError as err:
+    if username:
+        if not password:
+            password = _read_password(username)
+            args.password = password
+        return username, password
+
+    config_file_path = os.path.expanduser(args.config)
+    if not os.path.exists(config_file_path):
+        response = input(f"Config file {config_file_path} does not exist. Create it? (y/n): ").strip().lower()
+        if response == "y":
+            _init_config_file(config_file_path)
             raise ClipperCardCommandError(
-                f"Account config section {args.account!r} is not found in {config_file_path}"
-            ) from err
+                f"Config file created. Please edit {config_file_path} and add your credentials."
+            )
+        else:
+            raise ClipperCardCommandError(
+                f"Login config file {config_file_path} does not exist. "
+                "Use --username, optionally --password, or create a config file."
+            )
+    try:
+        parser = configparser.ConfigParser()
+        parser.read(config_file_path)
+        section = args.account
+        username, password = parser.get(section, "username"), parser.get(section, "password")
+    except configparser.NoSectionError as err:
+        raise ClipperCardCommandError(
+            f"Account config section {args.account!r} is not found in {config_file_path}"
+        ) from err
     return username, password
 
 
 def _config_auth_available(args):
-    username, password = args.username, args.password
-    if username and password:
+    if args.username:
         return True
 
     config_file_path = os.path.expanduser(args.config)
@@ -133,7 +155,7 @@ def _config_auth_available(args):
 
 
 def _arg_auth_available(args):
-    return bool(args.username and args.password)
+    return bool(args.username)
 
 
 def _get_client_auth_with_source(args):
@@ -276,7 +298,10 @@ def _build_parser():
         help="Account login config file path (default: ~/.config/clippercard/credentials.ini)",
     )
     auth_group.add_argument("--username", help="Login username (instead of config file)")
-    auth_group.add_argument("--password", help="Login password (instead of config file)")
+    auth_group.add_argument(
+        "--password",
+        help="Login password (instead of config file). If omitted with --username, you will be prompted to paste it.",
+    )
     auth_group.add_argument(
         "--credential-store",
         choices=("config", "keychain"),
