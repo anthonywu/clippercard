@@ -287,19 +287,19 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beautifulsoup4", specifier = ">=4.9.0" },
-    { name = "requests", specifier = ">=2.25.0,<3.0" },
-    { name = "rich", specifier = ">=13.0.0" },
-    { name = "urllib3", specifier = ">=1.26.0" },
+    { name = "beautifulsoup4", specifier = ">=4.15.0" },
+    { name = "requests", specifier = ">=2.34.2,<3.0" },
+    { name = "rich", specifier = ">=15.0.0" },
+    { name = "urllib3", specifier = ">=2.7.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "build", specifier = ">=1.0.0" },
-    { name = "nox", specifier = ">=2024.3.2" },
-    { name = "pytest", specifier = ">=7.0.0" },
-    { name = "ruff", specifier = ">=0.4.0" },
-    { name = "twine", specifier = ">=5.0.0" },
+    { name = "build", specifier = ">=1.5.0" },
+    { name = "nox", specifier = ">=2026.8.17" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "ruff", specifier = ">=0.16.3" },
+    { name = "twine", specifier = ">=7.0.0" },
 ]
 
 [[package]]
