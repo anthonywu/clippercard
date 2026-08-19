@@ -25,7 +25,17 @@ import json
 import logging
 import re
 from datetime import datetime
-from warnings import deprecated
+
+try:
+    from warnings import deprecated
+except ImportError:  # Python < 3.13
+
+    def deprecated(message):
+        def decorator(func):
+            return func
+
+        return decorator
+
 
 import bs4
 
