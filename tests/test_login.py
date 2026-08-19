@@ -253,7 +253,7 @@ def test_keychain_cookie_store_requires_macos():
     ):
         session._load_cookie_jar()
 
-    assert str(exc.value) == "macOS Keychain cookie storage is only supported on macOS"
+    assert str(exc.value) == "macOS Keychain storage is only supported on macOS"
 
 
 def test_profile_info_fetches_and_parses_profile_page(tmp_path):

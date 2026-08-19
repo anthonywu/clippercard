@@ -9,6 +9,7 @@ import pytest
 
 import clippercard.main as main
 import clippercard.test_cli as test_cli
+from clippercard.client import ClipperCardError
 
 
 def test_cookie_jar_path_for_default_account_keeps_legacy_filename(tmp_path):
@@ -62,8 +63,8 @@ def test_get_client_auth_loads_credentials_from_keychain():
         )
 
     with (
-        patch("clippercard.main.sys.platform", "darwin"),
-        patch("clippercard.main.subprocess.run", new=fake_run),
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.client.subprocess.run", new=fake_run),
     ):
         assert main._get_client_auth(args) == ("person@example.com", "supersecret")
 
@@ -112,8 +113,8 @@ password = supersecret
         raise AssertionError(f"Unexpected security command: {command}")
 
     with (
-        patch("clippercard.main.sys.platform", "darwin"),
-        patch("clippercard.main.subprocess.run", new=fake_run),
+        patch("clippercard.client.sys.platform", "darwin"),
+        patch("clippercard.client.subprocess.run", new=fake_run),
     ):
         assert main._get_client_auth(args) == ("person@example.com", "supersecret")
 
@@ -130,12 +131,12 @@ def test_get_client_auth_keychain_requires_macos():
     )
 
     with (
-        patch("clippercard.main.sys.platform", "linux"),
-        pytest.raises(main.ClipperCardCommandError) as exc,
+        patch("clippercard.client.sys.platform", "linux"),
+        pytest.raises(ClipperCardError) as exc,
     ):
         main._get_client_auth(args)
 
-    assert str(exc.value) == "macOS Keychain credential storage is only supported on macOS"
+    assert str(exc.value) == "macOS Keychain storage is only supported on macOS"
 
 
 def test_get_client_auth_uses_keychain_when_config_auth_is_missing():
@@ -296,8 +297,8 @@ def test_summary_saves_credentials_to_keychain_after_login():
                 "supersecret",
             ],
         ),
-        patch("clippercard.main.subprocess.run", new=fake_run),
-        patch("clippercard.main.sys.platform", "darwin"),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+        patch("clippercard.client.sys.platform", "darwin"),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),
         patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
@@ -358,8 +359,8 @@ def test_summary_does_not_resave_credentials_loaded_from_keychain():
                 "file",
             ],
         ),
-        patch("clippercard.main.subprocess.run", new=fake_run),
-        patch("clippercard.main.sys.platform", "darwin"),
+        patch("clippercard.client.subprocess.run", new=fake_run),
+        patch("clippercard.client.sys.platform", "darwin"),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),
         patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),

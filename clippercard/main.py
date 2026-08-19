@@ -8,12 +8,12 @@ import json
 import logging
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 import clippercard
 import clippercard.porcelain
+from clippercard.client import run_keychain
 
 
 class ClipperCardCommandError(Exception):
@@ -36,23 +36,8 @@ password = <replace_with_your_password>
     print(f"Created config file: {config_file_path}")
 
 
-def _run_keychain(*args, input_text=None):
-    if sys.platform != "darwin":
-        raise ClipperCardCommandError("macOS Keychain credential storage is only supported on macOS")
-    kwargs = {}
-    if input_text is not None:
-        kwargs["input"] = input_text
-    return subprocess.run(
-        ["security", *args],
-        check=False,
-        capture_output=True,
-        text=True,
-        **kwargs,
-    )
-
-
 def _load_keychain_auth(account):
-    result = _run_keychain(
+    result = run_keychain(
         "find-generic-password",
         "-s",
         _CREDENTIAL_STORE_SERVICE,
@@ -72,12 +57,12 @@ def _load_keychain_auth(account):
 def _keychain_item_exists(service, account):
     if sys.platform != "darwin":
         return False
-    result = _run_keychain("find-generic-password", "-s", service, "-a", account)
+    result = run_keychain("find-generic-password", "-s", service, "-a", account)
     return result.returncode == 0
 
 
 def _save_keychain_auth(account, username, password):
-    result = _run_keychain(
+    result = run_keychain(
         "add-generic-password",
         "-U",
         "-s",
