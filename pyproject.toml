@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.11.3,<0.12"]
+requires = ["uv_build>=0.12.5,<0.13"]
 build-backend = "uv_build"
 
 [project]
@@ -24,19 +24,19 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "beautifulsoup4>=4.9.0",
-    "rich>=13.0.0",
-    "requests>=2.25.0,<3.0",
-    "urllib3>=1.26.0",
+    "beautifulsoup4>=4.15.0",
+    "rich>=15.0.0",
+    "requests>=2.34.2,<3.0",
+    "urllib3>=2.7.0",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=7.0.0",
-    "ruff>=0.4.0",
-    "build>=1.0.0",
-    "twine>=5.0.0",
-    "nox>=2024.3.2",
+    "pytest>=9.1.1",
+    "ruff>=0.16.3",
+    "build>=1.5.0",
+    "twine>=7.0.0",
+    "nox>=2026.8.17",
 ]
 
 [project.scripts]
