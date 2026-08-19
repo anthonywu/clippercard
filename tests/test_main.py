@@ -344,7 +344,7 @@ def test_summary_can_use_keychain_cookie_store():
     )
 
 
-def test_summary_saves_credentials_to_keychain_after_login():
+def test_summary_saves_credentials_to_keychain_after_login(capsys):
     expected_cookie_path = Path("/tmp/auth.cookies")
 
     class DummySession:
@@ -388,7 +388,6 @@ def test_summary_saves_credentials_to_keychain_after_login():
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),
         patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
         patch("clippercard.main.sys.stdout.isatty", return_value=True),
-        patch("clippercard.main.print"),
     ):
         main.main()
 
@@ -405,6 +404,9 @@ def test_summary_saves_credentials_to_keychain_after_login():
     assert "person@example.com" not in saved["command"]
     assert "supersecret" not in saved["command"]
     assert json.loads(saved["payload"]) == {"username": "person@example.com", "password": "supersecret"}
+    output = capsys.readouterr()
+    assert "Saved login credentials to macOS Keychain." in output.out
+    assert "summary output" in output.out
 
 
 def test_summary_does_not_resave_credentials_loaded_from_keychain():

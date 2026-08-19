@@ -235,6 +235,13 @@ def _resolve_cookie_store(args, cookie_jar_path=None):
     return "file"
 
 
+def _print_status(message, output):
+    if output == "json":
+        print(message, file=sys.stderr)
+    else:
+        print(message)
+
+
 def _build_parser():
     parser = argparse.ArgumentParser(
         prog="clippercard",
@@ -320,21 +327,25 @@ def main():
             cookie_store=cookie_store,
             keychain_account=args.account,
         )
+        saved_keychain_credentials = False
         if (
             credential_store == "keychain"
             and getattr(args, "_credential_source", "config") != "keychain"
             and not session.reused_cookies
         ):
             _save_keychain_auth(args.account, username, password)
+            saved_keychain_credentials = True
         if args.command == "summary":
             output = args.output or ("table" if sys.stdout.isatty() else "json")
+            if saved_keychain_credentials:
+                _print_status(
+                    "Saved login credentials to macOS Keychain. "
+                    "You can delete the plaintext username/password from the config file if you no longer need them.",
+                    output,
+                )
             if session.reused_cookies:
                 cookie_storage_label = getattr(session, "cookie_storage_label", session.cookie_jar_path)
-                cookie_message = f"Reusing saved cookies from {cookie_storage_label}"
-                if output == "json":
-                    print(cookie_message, file=sys.stderr)
-                else:
-                    print(cookie_message)
+                _print_status(f"Reusing saved cookies from {cookie_storage_label}", output)
             if output == "json":
                 print(
                     clippercard.porcelain.summary_json_output(
