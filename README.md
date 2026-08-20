@@ -22,7 +22,7 @@ I encourage the staff of MTA reading this project to see this effort as a nudge 
 - Multiple cards' data
 - For each card, multiple products and balances
 
-I don't have access to all products loadable on the ClipperCard, so transit product variant support is limited to what I personally use for now. If you'd like me to add support for your product, send me the page source from your account home page: https://www.clippercard.com/ClipperWeb/account.html
+I don't have access to all products loadable on the ClipperCard, so transit product variant support is limited to what I personally use for now. If you'd like me to add support for your product, see the sample-sharing instructions under [Future](#future).
 
 # Security and Privacy
 
@@ -233,9 +233,26 @@ $ clippercard summary | jq .
 
 Use `--show-private` with either output format to include unredacted profile and card details.
 
-# More examples
+# Future
 
-If you have a transit pass that isn't recognized by this tool, you can privately share a copy of your account page `view-source:` with the maintainer.
+Planned improvements, roughly in priority order:
+
+- **Account health alerts** — surface problems the dashboard already reports but the CLI currently drops: suspended or failed autoloads, low cash/BART balances, and passes expiring soon, in both table and JSON output.
+- **Balance deltas** — remember the previous balances per account and show what changed since the last check.
+- **Trip and transaction history** — recent trips and loads per card. This needs real page samples (see below) before it can be built reliably.
+
+## Help wanted: dashboard page samples
+
+ClipperCard's web UI varies by account — card types, transit products, autoload setups — and the maintainer only has access to their own account. Real samples make the parser better for everyone.
+
+If you'd like to contribute one:
+
+1. Log in at https://www.clippercard.com and open the dashboard.
+2. View the page source (paste `view-source:https://www.clippercard.com/dashboard` into your browser's address bar) and save the full page.
+3. Redact personal details: name, email, mailing address, phone numbers, and all but the last 4 digits of card serial numbers.
+4. Open a GitHub issue describing what your account has (passes, autoload, BART purse, virtual/phone cards, etc.) — without attaching the file — and the maintainer will arrange a private handoff.
+
+Please don't paste page source into a public issue or pull request. Even redacted, treat it like a bank statement.
 
 # Contribute
 
