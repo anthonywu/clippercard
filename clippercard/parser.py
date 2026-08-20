@@ -192,8 +192,10 @@ def _cents_to_dollars(cents):
     """Convert cents (int) to formatted dollar string"""
     if cents is None:
         return None
-    dollars = cents / 100.0
-    return f"${dollars:.2f}"
+    cents = int(cents)
+    sign = "-" if cents < 0 else ""
+    cents = abs(cents)
+    return f"{sign}${cents // 100}.{cents % 100:02d}"
 
 
 def _purse_display_name(purse):

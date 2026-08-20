@@ -133,6 +133,13 @@ class TestDashboardCardParsing:
             ("BART", "$1.10"),
         ]
 
+    def test_cents_to_dollars_formats_from_integer_cents(self):
+        assert parser._cents_to_dollars(None) is None
+        assert parser._cents_to_dollars(0) == "$0.00"
+        assert parser._cents_to_dollars(1) == "$0.01"
+        assert parser._cents_to_dollars(110) == "$1.10"
+        assert parser._cents_to_dollars(-255) == "-$2.55"
+
     def test_purse_display_name_strips_hvd_suffix_without_description(self):
         assert (
             parser._purse_display_name(
