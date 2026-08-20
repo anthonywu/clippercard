@@ -27,7 +27,7 @@ class ClipperCardAuthError(ClipperCardError):
     """unable to login with provided credentials"""
 
 
-def _run_keychain(*args):
+def _run_keychain(*args: str) -> subprocess.CompletedProcess[str]:
     if sys.platform != "darwin":
         raise ClipperCardError("macOS Keychain storage is only supported on macOS")
     return subprocess.run(
@@ -71,7 +71,14 @@ class ClipperCardWebSession(httpx.Client):
         "Upgrade-Insecure-Requests": "1",
     }
 
-    def __init__(self, username=None, password=None, cookie_jar_path=None, cookie_store="file", keychain_account=None):
+    def __init__(
+        self,
+        username: str | None = None,
+        password: str | None = None,
+        cookie_jar_path: str | Path | None = None,
+        cookie_store: str = "file",
+        keychain_account: str | None = None,
+    ) -> None:
         # Follow redirects and bound every request: callers expect final-page
         # responses, and hanging forever is worse than a generous timeout.
         super().__init__(follow_redirects=True, timeout=30.0)
@@ -96,15 +103,15 @@ class ClipperCardWebSession(httpx.Client):
             raise
 
     @property
-    def reused_cookies(self):
+    def reused_cookies(self) -> bool:
         return self._reused_cookies
 
     @property
-    def cookie_jar_path(self):
+    def cookie_jar_path(self) -> Path:
         return self._cookie_jar_path
 
     @property
-    def cookie_storage_label(self):
+    def cookie_storage_label(self) -> str:
         if self._cookie_store == "keychain":
             return f"macOS Keychain item {self.COOKIE_STORE_SERVICE}:{self._keychain_account}"
         return str(self._cookie_jar_path)
@@ -282,7 +289,7 @@ class ClipperCardWebSession(httpx.Client):
         self._clear_cookie_jar()
         return None
 
-    def login(self, username, password):
+    def login(self, username: str, password: str) -> httpx.Response:
         """
         Authenticate user and fetch dashboard page.
         1. Try saved cookies against /dashboard
@@ -378,7 +385,7 @@ class ClipperCardWebSession(httpx.Client):
         return dashboard_resp
 
     @property
-    def profile_info(self):
+    def profile_info(self) -> parser.Profile | None:
         """
         Returns *Profile* namedtuples associated with logged in user.
         """
@@ -407,7 +414,7 @@ class ClipperCardWebSession(httpx.Client):
         return self._profile_info
 
     @property
-    def cards(self):
+    def cards(self) -> list[parser.Card]:
         """
         Returns list of *Card* namedtuples associated with logged in user
         """

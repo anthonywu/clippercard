@@ -205,7 +205,7 @@ def _values_by_column(card):
     return {name: ", ".join(part for part in values if part) for name, values in grouped.items()}
 
 
-def summary_json_output(user_profile, cards, show_private=False):
+def summary_json_output(user_profile: object | None, cards: list | None, show_private: bool = False) -> str:
     """
     Serializes a user profile and its associated cards and products as JSON.
     """
@@ -239,7 +239,9 @@ def summary_json_output(user_profile, cards, show_private=False):
     return json.dumps({"profile": profile, "cards": card_items}, indent=2)
 
 
-def tabular_output(user_profile, cards, show_private=False, color=False):
+def tabular_output(
+    user_profile: object | None, cards: list | None, show_private: bool = False, color: bool = False
+) -> str:
     """Pretty-print a profile and cards. Cards are highest Cash Value first."""
     color = _use_color(color)
     output_parts = []

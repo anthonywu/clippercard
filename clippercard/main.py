@@ -336,7 +336,7 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
     parser = _build_parser()
     args = parser.parse_args()
 

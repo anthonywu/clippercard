@@ -25,7 +25,7 @@ class Profile(NamedTuple):
     primary_payment: str
     backup_payment: str
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "\n".join(
             [
                 "Name: {name}",
@@ -45,7 +45,7 @@ class CardFeature(NamedTuple):
     name: str
     value: str
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{name}: {value}".format(**self._asdict())
 
 
@@ -55,7 +55,7 @@ class CardProduct(NamedTuple):
     name: str
     value: str
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{name}: {value}".format(**self._asdict())
 
 
@@ -69,7 +69,7 @@ class Card(NamedTuple):
     features: list[CardFeature]  # annotated properties of the card (e.g. auto-load)
     products: list[CardProduct]  # e.g. Cash Value, Train Pass
 
-    def __str__(self):
+    def __str__(self) -> str:
         lines = ['{serial_number} "{nickname}" ({type} - {status})'.format(**self._asdict())]
         for prod in self.products:
             lines.append(f"  - {prod}")
@@ -83,7 +83,7 @@ class Card(NamedTuple):
 REGEX_WHITESPACE = re.compile(r"\s+")
 
 
-def cleanup_whitespace(text_content):
+def cleanup_whitespace(text_content: str) -> str:
     """clean up junk whitespace that comes with every table cell"""
     return re.sub(REGEX_WHITESPACE, " ", text_content.strip())
 
@@ -91,7 +91,7 @@ def cleanup_whitespace(text_content):
 # === Section Parsers ===
 
 
-def parse_login_form_fields(login_page_content):
+def parse_login_form_fields(login_page_content: str) -> dict[str, str]:
     """Parse default field values from the login form."""
     soup = bs4.BeautifulSoup(login_page_content, "html.parser")
     login_form = soup.find("form", attrs={"action": "/dashboard"})
@@ -120,7 +120,7 @@ def parse_login_form_fields(login_page_content):
     return fields
 
 
-def parse_profile_page(profile_html_content):
+def parse_profile_page(profile_html_content: str) -> Profile:
     """Parse the modern /profile page."""
     soup = bs4.BeautifulSoup(profile_html_content, "html.parser")
 
@@ -193,7 +193,7 @@ def _products_from_purses(account):
     return products
 
 
-def parse_dashboard_cards(dashboard_html_content):
+def parse_dashboard_cards(dashboard_html_content: str) -> list[Card]:
     """Parse card data from dashboard page (contains JSON object with card info)
 
     The dashboard page embeds a JavaScript variable with patron account details
