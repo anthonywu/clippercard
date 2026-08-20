@@ -46,11 +46,7 @@ class ClipperCardAuthError(ClipperCardError):
     """unable to login with provided credentials"""
 
 
-class ClipperCardContentError(ClipperCardError):
-    """unable to recognize and parse web content"""
-
-
-def run_keychain(*args):
+def _run_keychain(*args):
     if sys.platform != "darwin":
         raise ClipperCardError("macOS Keychain storage is only supported on macOS")
     return subprocess.run(
@@ -185,7 +181,7 @@ class ClipperCardWebSession(httpx.Client):
             self._cookie_jar.set_cookie(self._cookie_from_dict(cookie))
 
     def _load_keychain_cookies(self):
-        result = run_keychain(
+        result = _run_keychain(
             "find-generic-password",
             "-s",
             self.COOKIE_STORE_SERVICE,
@@ -206,7 +202,7 @@ class ClipperCardWebSession(httpx.Client):
         return bool(loaded_cookies)
 
     def _save_keychain_cookies(self):
-        result = run_keychain(
+        result = _run_keychain(
             "add-generic-password",
             "-U",
             "-s",
@@ -222,7 +218,7 @@ class ClipperCardWebSession(httpx.Client):
 
     def _clear_keychain_cookies(self):
         self._cookie_jar.clear()
-        result = run_keychain(
+        result = _run_keychain(
             "delete-generic-password",
             "-s",
             self.COOKIE_STORE_SERVICE,

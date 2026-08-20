@@ -99,7 +99,7 @@ class Card(NamedTuple):
 
 # === Helpers ===
 
-REGEX_WHITESPACE = re.compile(r"\s+")  # noqa
+REGEX_WHITESPACE = re.compile(r"\s+")
 
 
 def cleanup_whitespace(text_content):
@@ -108,23 +108,6 @@ def cleanup_whitespace(text_content):
 
 
 # === Section Parsers ===
-
-
-def parse_login_form_csrf(login_page_content):
-    """Parse the login form the _csrf arg for login submission"""
-    soup = bs4.BeautifulSoup(login_page_content, "html.parser")
-    # Find the form that posts to /dashboard (new login form)
-    login_form = soup.find("form", attrs={"action": "/dashboard"})
-    if not login_form:
-        # Fallback to old form structure
-        login_form = soup.find("form", id="login-form")
-    if not login_form:
-        raise ValueError("Could not find login form")
-    csrf_input = login_form.find("input", attrs={"name": "_csrf"})
-    if not csrf_input:
-        raise ValueError("Could not find CSRF token in login form")
-    csrf_value = csrf_input.attrs["value"]
-    return csrf_value
 
 
 def parse_login_form_fields(login_page_content):

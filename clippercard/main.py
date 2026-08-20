@@ -14,7 +14,7 @@ from pathlib import Path
 
 import clippercard
 import clippercard.porcelain
-from clippercard.client import run_keychain
+from clippercard.client import _run_keychain
 
 
 class ClipperCardCommandError(Exception):
@@ -44,7 +44,7 @@ password = <replace_with_your_password>
 
 
 def _load_keychain_auth(account):
-    result = run_keychain(
+    result = _run_keychain(
         "find-generic-password",
         "-s",
         _CREDENTIAL_STORE_SERVICE,
@@ -64,12 +64,12 @@ def _load_keychain_auth(account):
 def _keychain_item_exists(service, account):
     if sys.platform != "darwin":
         return False
-    result = run_keychain("find-generic-password", "-s", service, "-a", account)
+    result = _run_keychain("find-generic-password", "-s", service, "-a", account)
     return result.returncode == 0
 
 
 def _save_keychain_auth(account, username, password):
-    result = run_keychain(
+    result = _run_keychain(
         "add-generic-password",
         "-U",
         "-s",
@@ -171,7 +171,8 @@ def _arg_auth_available(args):
     return bool(args.username)
 
 
-def _get_client_auth_with_source(args):
+def _get_client_auth(args):
+    """Resolve (username, password) plus where they came from ("config" or "keychain")."""
     if args.credential_store == "keychain":
         if _arg_auth_available(args):
             return _get_config_or_arg_auth(args), "config"
@@ -188,11 +189,6 @@ def _get_client_auth_with_source(args):
             return credentials, "keychain"
 
     return _get_config_or_arg_auth(args), "config"
-
-
-def _get_client_auth(args):
-    """Resolve (username, password) plus where they came from ("config" or "keychain")."""
-    return _get_client_auth_with_source(args)
 
 
 def _config_option(args, option):
