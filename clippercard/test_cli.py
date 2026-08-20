@@ -51,8 +51,9 @@ def main():
         elif args.command == "parse-profile":
             profile = clippercard.parser.parse_profile_page(html_content)
             print(clippercard.porcelain.tabular_output(profile, None))
-    except FileNotFoundError as e:
-        sys.exit(str(e))
+    except FileNotFoundError as err:
+        print(err, file=sys.stderr)
+        raise SystemExit(1) from err
 
 
 if __name__ == "__main__":

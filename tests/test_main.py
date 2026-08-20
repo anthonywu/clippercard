@@ -200,6 +200,37 @@ def test_init_config_file_creates_credentials_with_mode_600(tmp_path):
     assert "username = <replace_with_your_email>" in config_path.read_text()
 
 
+def test_get_config_or_arg_auth_skips_create_prompt_when_stdin_is_not_a_tty(tmp_path):
+    args = SimpleNamespace(
+        account="default",
+        config=str(tmp_path / "missing.ini"),
+        username=None,
+        password=None,
+    )
+
+    with (
+        patch("clippercard.main.sys.stdin.isatty", return_value=False),
+        pytest.raises(main.ClipperCardCommandError, match="does not exist"),
+    ):
+        main._get_config_or_arg_auth(args)
+
+
+def test_get_config_or_arg_auth_treats_eof_as_missing_config(tmp_path):
+    args = SimpleNamespace(
+        account="default",
+        config=str(tmp_path / "missing.ini"),
+        username=None,
+        password=None,
+    )
+
+    with (
+        patch("clippercard.main.sys.stdin.isatty", return_value=True),
+        patch("clippercard.main.input", side_effect=EOFError),
+        pytest.raises(main.ClipperCardCommandError, match="does not exist"),
+    ):
+        main._get_config_or_arg_auth(args)
+
+
 def test_get_client_auth_accepts_percent_signs_in_config_password(tmp_path):
     config_path = tmp_path / "credentials.ini"
     config_path.write_text(
@@ -632,7 +663,7 @@ def test_summary_does_not_save_credentials_when_session_reuses_cookies():
     assert "add-generic-password" not in commands_seen
 
 
-def test_summary_does_not_save_credentials_when_login_fails():
+def test_summary_does_not_save_credentials_when_login_fails(capsys):
     expected_cookie_path = Path("/tmp/auth.cookies")
     commands_seen = []
 
@@ -668,11 +699,13 @@ def test_summary_does_not_save_credentials_when_login_fails():
             "clippercard.main.clippercard.Session",
             side_effect=ClipperCardAuthError("Authentication failed - credentials were rejected"),
         ),
-        pytest.raises(SystemExit, match="Authentication failed - credentials were rejected"),
+        pytest.raises(SystemExit) as exc,
     ):
         main.main()
 
     assert "add-generic-password" not in commands_seen
+    assert exc.value.code == 1
+    assert "Authentication failed - credentials were rejected" in capsys.readouterr().err
 
 
 def test_summary_can_output_json_without_cookie_message_on_stdout(capsys):

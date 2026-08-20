@@ -122,17 +122,22 @@ def _get_config_or_arg_auth(args):
 
     config_file_path = Path(args.config).expanduser()
     if not config_file_path.exists():
-        response = input(f"Config file {config_file_path} does not exist. Create it? (y/n): ").strip().lower()
+        missing = (
+            f"Login config file {config_file_path} does not exist. "
+            "Use --username, optionally --password, or create a config file."
+        )
+        if not sys.stdin.isatty():
+            raise ClipperCardCommandError(missing)
+        try:
+            response = input(f"Config file {config_file_path} does not exist. Create it? (y/n): ").strip().lower()
+        except (EOFError, KeyboardInterrupt) as err:
+            raise ClipperCardCommandError(missing) from err
         if response == "y":
             _init_config_file(config_file_path)
             raise ClipperCardCommandError(
                 f"Config file created. Please edit {config_file_path} and add your credentials."
             )
-        else:
-            raise ClipperCardCommandError(
-                f"Login config file {config_file_path} does not exist. "
-                "Use --username, optionally --password, or create a config file."
-            )
+        raise ClipperCardCommandError(missing)
     try:
         parser = _read_config(config_file_path)
         section = args.account
@@ -398,8 +403,9 @@ def main():
                     )
         finally:
             session.close()
-    except (clippercard.client.ClipperCardError, ClipperCardCommandError, FileNotFoundError) as e:
-        sys.exit(str(e))
+    except (clippercard.client.ClipperCardError, ClipperCardCommandError) as err:
+        print(err, file=sys.stderr)
+        raise SystemExit(1) from err
 
 
 if __name__ == "__main__":
