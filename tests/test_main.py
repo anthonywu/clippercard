@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 
 import clippercard.main as main
-import clippercard.test_cli as test_cli
+import tests.fixture_cli as test_cli
 from clippercard.client import ClipperCardAuthError, ClipperCardError
 
 
@@ -848,16 +848,16 @@ def test_test_cli_exposes_fixture_subcommands():
 def test_test_cli_parse_dashboard_uses_dashboard_parser():
     with (
         patch.object(sys, "argv", ["clippercard-test", "parse-dashboard", "dashboard.html"]),
-        patch("clippercard.test_cli.Path.read_text", return_value="<html></html>"),
+        patch("tests.fixture_cli.Path.read_text", return_value="<html></html>"),
         patch(
-            "clippercard.test_cli.clippercard.parser.parse_dashboard_cards",
+            "tests.fixture_cli.clippercard.parser.parse_dashboard_cards",
             return_value=["card"],
         ) as parse_mock,
         patch(
-            "clippercard.test_cli.clippercard.porcelain.tabular_output",
+            "tests.fixture_cli.clippercard.porcelain.tabular_output",
             return_value="dashboard output",
         ) as output_mock,
-        patch("clippercard.test_cli.print") as print_mock,
+        patch("tests.fixture_cli.print") as print_mock,
     ):
         test_cli.main()
 
@@ -869,16 +869,16 @@ def test_test_cli_parse_dashboard_uses_dashboard_parser():
 def test_test_cli_parse_profile_uses_profile_parser():
     with (
         patch.object(sys, "argv", ["clippercard-test", "parse-profile", "profile.html"]),
-        patch("clippercard.test_cli.Path.read_text", return_value="<html></html>"),
+        patch("tests.fixture_cli.Path.read_text", return_value="<html></html>"),
         patch(
-            "clippercard.test_cli.clippercard.parser.parse_profile_page",
+            "tests.fixture_cli.clippercard.parser.parse_profile_page",
             return_value={"name": "Profile"},
         ) as parse_mock,
         patch(
-            "clippercard.test_cli.clippercard.porcelain.tabular_output",
+            "tests.fixture_cli.clippercard.porcelain.tabular_output",
             return_value="profile output",
         ) as output_mock,
-        patch("clippercard.test_cli.print") as print_mock,
+        patch("tests.fixture_cli.print") as print_mock,
     ):
         test_cli.main()
 

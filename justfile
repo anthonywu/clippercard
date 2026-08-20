@@ -5,7 +5,7 @@ sync:
     uv sync --group dev
 
 test-cli *args:
-    uv run python -m clippercard.test_cli {{args}}
+    uv run python tests/fixture_cli.py {{args}}
 
 test:
     uv run nox -s test
