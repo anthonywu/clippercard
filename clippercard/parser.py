@@ -196,11 +196,42 @@ def _cents_to_dollars(cents):
     return f"${dollars:.2f}"
 
 
+def _purse_display_name(purse):
+    if purse.get("purseRestriction") == "Unrestricted":
+        return "Cash Value"
+    for candidate in (purse.get("description"), purse.get("purseName")):
+        if candidate:
+            return re.sub(r"\s+HVD Purse$", "", candidate).strip() or candidate
+    return "Purse"
+
+
+def _product_from_purse(purse):
+    if not purse or purse.get("balance") is None:
+        return None
+    return CardProduct(name=_purse_display_name(purse), value=_cents_to_dollars(purse["balance"]))
+
+
+def _products_from_purses(account):
+    """Operator-restricted purses (BART, Muni, ...) live in purseList, not bartPurse-only."""
+    purse_list = account.get("purseList")
+    if purse_list:
+        return [product for purse in purse_list if (product := _product_from_purse(purse))]
+
+    products = []
+    cash_purse = account.get("cashPurse")
+    if cash_purse and cash_purse.get("balance") is not None:
+        products.append(CardProduct(name="Cash Value", value=_cents_to_dollars(cash_purse["balance"])))
+    bart_purse = account.get("bartPurse")
+    if bart_purse and bart_purse.get("balance") is not None:
+        products.append(CardProduct(name="BART", value=_cents_to_dollars(bart_purse["balance"])))
+    return products
+
+
 def parse_dashboard_cards(dashboard_html_content):
     """Parse card data from dashboard page (contains JSON object with card info)
 
     The dashboard page embeds a JavaScript variable with patron account details
-    containing card nicknames, cash values, and BART purse balances.
+    containing card nicknames, cash values, and agency purse balances.
     """
     soup = bs4.BeautifulSoup(dashboard_html_content, "html.parser")
 
@@ -239,22 +270,7 @@ def parse_dashboard_cards(dashboard_html_content):
         nickname = account.get("nickname", "Unknown")
         serial_number = account.get("subsystemAccountReference", "")
 
-        # Extract products (purses with balances)
-        products = []
-
-        # Cash Value purse
-        cash_purse = account.get("cashPurse")
-        if cash_purse:
-            balance = cash_purse.get("balance")
-            if balance is not None:
-                products.append(CardProduct(name="Cash Value", value=_cents_to_dollars(balance)))
-
-        # BART purse
-        bart_purse = account.get("bartPurse")
-        if bart_purse:
-            balance = bart_purse.get("balance")
-            if balance is not None:
-                products.append(CardProduct(name="BART", value=_cents_to_dollars(balance)))
+        products = _products_from_purses(account)
 
         pass_list = account.get("passList", [])
         for pass_info in pass_list:

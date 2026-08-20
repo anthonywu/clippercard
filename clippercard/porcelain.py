@@ -29,6 +29,9 @@ from rich.table import Table
 from rich.text import Text
 
 _CONSOLE_WIDTH = 1000
+_CASH_COLUMN = "Cash Value"
+_PASS_COLUMN = "Pass"
+_MONEY_VALUE = re.compile(r"^\$\d+\.\d{2}$")
 
 
 def _render_table(table):
@@ -81,6 +84,70 @@ def _product_to_json(product):
         "name": data.get("name"),
         "value": data.get("value"),
     }
+
+
+def _item_name_value(item):
+    if isinstance(item, str):
+        name, sep, value = item.partition(": ")
+        if not sep:
+            return item, ""
+    else:
+        data = _asdict(item)
+        name = data.get("name")
+        value = data.get("value")
+        if not name:
+            return str(item), ""
+    value = re.sub(r"\s+", " ", str(value).strip()) if value else ""
+    return name, value
+
+
+def _is_money_value(value):
+    return bool(value) and _MONEY_VALUE.fullmatch(value) is not None
+
+
+def _column_names_for_cards(cards):
+    product_names = []
+    feature_names = []
+    seen_products = set()
+    seen_features = set()
+    for card in cards:
+        for item in card.products:
+            name, _ = _item_name_value(item)
+            if name and name not in seen_products:
+                seen_products.add(name)
+                product_names.append(name)
+        for item in card.features:
+            name, _ = _item_name_value(item)
+            if name and name not in seen_products and name not in seen_features:
+                seen_features.add(name)
+                feature_names.append(name)
+    cash = [_CASH_COLUMN] if _CASH_COLUMN in seen_products else []
+    pas = [_PASS_COLUMN] if _PASS_COLUMN in seen_products else []
+    agencies = sorted(
+        (name for name in product_names if name not in {_CASH_COLUMN, _PASS_COLUMN}),
+        key=str.casefold,
+    )
+    return cash + agencies + pas + feature_names
+
+
+def _money_columns(columns, row_values):
+    money = set()
+    for column in columns:
+        cells = [values.get(column, "") for values in row_values]
+        nonempty = [cell for cell in cells if cell]
+        if nonempty and all(_is_money_value(cell) for cell in nonempty):
+            money.add(column)
+    return money
+
+
+def _values_by_column(card):
+    grouped = {}
+    for item in (*card.products, *card.features):
+        name, value = _item_name_value(item)
+        if not name:
+            continue
+        grouped.setdefault(name, []).append(value)
+    return {name: ", ".join(part for part in values if part) for name, values in grouped.items()}
 
 
 def summary_json_output(user_profile, cards, show_private=False):
@@ -137,24 +204,33 @@ def tabular_output(user_profile, cards, show_private=False):
             output_parts.append(_render_table(profile_table))
 
     if cards:
+        columns = _column_names_for_cards(cards)
         card_table = Table(box=box.ASCII)
-        card_table.add_column("#", justify="left", no_wrap=True)
+        card_table.add_column("#", justify="right", no_wrap=True)
         card_table.add_column("Name", justify="left", no_wrap=True)
         card_table.add_column("Serial", justify="left", no_wrap=True)
         card_table.add_column("Type", justify="left", no_wrap=True)
         card_table.add_column("Status", justify="left", no_wrap=True)
-        card_table.add_column("Products", justify="left", no_wrap=True)
+        for column in columns:
+            card_table.add_column(column, no_wrap=True)
+        rows = []
         for i, card in enumerate(cards, 1):
             serial = card.serial_number
             if not show_private:
                 serial = _redact_private_info("serial_number", serial)
+            rows.append((i, card, serial, _values_by_column(card)))
+        money_columns = _money_columns(columns, [values for _, _, _, values in rows])
+        for i, card, serial, values in rows:
             card_table.add_row(
                 str(i),
-                Text(str(card.nickname)),
-                Text(str(serial)),
-                Text(str(card.type)),
-                Text(str(card.status)),
-                Text("\n".join(str(_) for _ in card.products + card.features)),
+                str(card.nickname),
+                str(serial),
+                str(card.type),
+                str(card.status),
+                *[
+                    Text(values.get(column, ""), justify="right") if column in money_columns else values.get(column, "")
+                    for column in columns
+                ],
             )
         output_parts.append(_render_table(card_table))
     elif cards is not None:
