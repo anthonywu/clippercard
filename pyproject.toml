@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "clippercard"
-version = "202608.19.1"
+version = "202608.19.2"
 description = "Unofficial Python API for Clipper Card (transportation pass used in the SF Bay Area)"
 readme = "README.md"
 license = "MIT"
@@ -26,16 +26,13 @@ classifiers = [
 dependencies = [
     "beautifulsoup4>=4.15.0",
     "rich>=15.0.0",
-    "requests>=2.34.2,<3.0",
-    "urllib3>=2.7.0",
+    "httpx>=0.28.1,<1.0",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.3",
-    "build>=1.5.0",
-    "twine>=7.0.0",
     "nox>=2026.8.17",
 ]
 

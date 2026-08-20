@@ -20,13 +20,10 @@ format:
     uv run ruff format .
 
 build-dist:
-    uv run nox -s build
+    uv build
 
-upload-test: build-dist
-    uv run twine upload -r pypitest dist/*
-
-upload-live: build-dist
-    uv run twine upload -r pypi dist/
+publish-test: build-dist
+    uv publish --publish-url https://test.pypi.org/legacy/ dist/*
 
 publish: build-dist
     uv publish dist/*

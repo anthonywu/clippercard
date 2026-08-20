@@ -1,0 +1,95 @@
+name: Create Release and Publish to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "publish" to confirm release'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Deployment gate: requires reviewer approval and restricts publishable
+    # branches per the environment's protection rules (Settings > Environments > pypi).
+    # The PyPI trusted publisher is also pinned to this environment name.
+    environment: pypi
+    permissions:
+      contents: write # git tag push + GitHub release
+      id-token: write # OIDC trusted publishing to PyPI
+
+    steps:
+      - name: Validate branch
+        # Defense in depth: the pypi environment's deployment branch policy is
+        # the primary gate; this fails fast with a clear message if dispatched
+        # from any ref other than main.
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "❌ Releases may only be published from main (got ${{ github.ref }})"
+            exit 1
+          fi
+
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "publish" ]; then
+            echo "❌ Must type 'publish' to confirm release"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # need full history for the tag-exists check and tag push
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d # v10.0.0
+        with:
+          version: "0.12.5" # pinned uv: matches tests.yml and uv.lock rendering
+          python-version: "3.14"
+          activate-environment: true
+
+      # Lockfile-pinned install, same as tests.yml: --locked fails the release
+      # if uv.lock drifts from pyproject.toml.
+      - name: Install dependencies
+        run: uv sync --group dev --locked
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Resolve and guard version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # A leftover tag means this pyproject version was already released;
+        # fail before building so the version must be bumped deliberately.
+        run: |
+          VERSION="$(uv version --short)"
+          if gh api "repos/$GITHUB_REPOSITORY/git/refs/tags/v$VERSION" --silent 2>/dev/null; then
+            echo "❌ Tag v$VERSION already exists; bump the version in pyproject.toml first"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build distributions
+        run: uv build
+
+      # Trusted publishing: no stored PyPI token; uv performs the GitHub OIDC
+      # exchange itself. (mflux uses pypa/gh-action-pypi-publish here instead;
+      # uv publish keeps one publishing tool for local and CI releases.)
+      - name: Publish to PyPI
+        run: uv publish --trusted-publishing automatic dist/*
+
+      # Tag and release only after a successful publish, so a tag always
+      # denotes a version that actually made it to PyPI.
+      - name: Tag and create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+          gh release create "v${{ steps.version.outputs.version }}" \
+            --title "v${{ steps.version.outputs.version }}" \
+            --generate-notes

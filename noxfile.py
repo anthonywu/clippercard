@@ -29,10 +29,3 @@ def format(session: nox.Session) -> None:
     """Format code with ruff."""
     session.run("uv", "sync", "--group", "dev", external=True)
     session.run("uv", "run", "ruff", "format", ".", external=True)
-
-
-@nox.session(python="3.14")
-def build(session: nox.Session) -> None:
-    """Build distributions."""
-    session.run("uv", "sync", "--group", "dev", external=True)
-    session.run("uv", "run", "python", "-m", "build", external=True)

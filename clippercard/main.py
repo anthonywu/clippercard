@@ -333,6 +333,9 @@ def main():
     # Set up logging
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(level=log_level)
+    # httpx logs every request at INFO; keep per-request lines behind --debug
+    if not args.debug:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
 
     if not args.command:
         parser.print_help()

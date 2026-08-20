@@ -1,4 +1,5 @@
 import json
+import logging
 import sys
 from pathlib import Path
 from subprocess import CompletedProcess
@@ -10,6 +11,30 @@ import pytest
 import clippercard.main as main
 import clippercard.test_cli as test_cli
 from clippercard.client import ClipperCardAuthError, ClipperCardError
+
+
+@pytest.fixture
+def restore_httpx_logger_level():
+    logger = logging.getLogger("httpx")
+    original_level = logger.level
+    yield
+    logger.setLevel(original_level)
+
+
+def test_main_suppresses_httpx_request_logs_by_default(restore_httpx_logger_level):
+    with patch.object(sys, "argv", ["clippercard"]), pytest.raises(SystemExit):
+        main.main()
+
+    assert logging.getLogger("httpx").level == logging.WARNING
+
+
+def test_main_keeps_httpx_request_logs_with_debug(restore_httpx_logger_level):
+    logging.getLogger("httpx").setLevel(logging.NOTSET)
+
+    with patch.object(sys, "argv", ["clippercard", "--debug"]), pytest.raises(SystemExit):
+        main.main()
+
+    assert logging.getLogger("httpx").level == logging.NOTSET
 
 
 def test_cookie_jar_path_for_default_account_keeps_legacy_filename(tmp_path):
