@@ -29,7 +29,7 @@ from http.cookiejar import Cookie, LoadError, MozillaCookieJar
 from pathlib import Path
 
 import bs4
-import requests
+import httpx
 
 import clippercard.parser as parser
 
@@ -64,7 +64,7 @@ def run_keychain(*args):
 # === ClipperCardWebSession ===
 
 
-class ClipperCardWebSession(requests.Session):
+class ClipperCardWebSession(httpx.Client):
     """
     A stateful session for clippercard.com
     """
@@ -84,7 +84,7 @@ class ClipperCardWebSession(requests.Session):
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,"
             "image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
         ),
-        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept-Encoding": "gzip, deflate",
         "Accept-Language": "en-US,en;q=0.9",
         "Cache-Control": "max-age=0",
         "Sec-Fetch-Dest": "document",
@@ -94,12 +94,17 @@ class ClipperCardWebSession(requests.Session):
     }
 
     def __init__(self, username=None, password=None, cookie_jar_path=None, cookie_store="file", keychain_account=None):
-        requests.Session.__init__(self)
+        # Follow redirects and bound every request: callers expect final-page
+        # responses, and hanging forever is worse than a generous timeout.
+        httpx.Client.__init__(self, follow_redirects=True, timeout=30.0)
         self.headers.update(self.HEADERS)
         self._cookie_jar_path = Path(cookie_jar_path).expanduser() if cookie_jar_path else self.COOKIE_JAR_PATH
         self._cookie_store = cookie_store
         self._keychain_account = keychain_account or "default"
-        self.cookies = MozillaCookieJar(str(self._cookie_jar_path))
+        # httpx wraps a stdlib CookieJar in httpx.Cookies without copying it,
+        # so load()/save()/set_cookie() go through our MozillaCookieJar handle.
+        self._cookie_jar = MozillaCookieJar(str(self._cookie_jar_path))
+        self.cookies = self._cookie_jar
         self._dashboard_resp_text = None
         self._profile_info = None
         self._profile_loaded = False
@@ -166,12 +171,12 @@ class ClipperCardWebSession(requests.Session):
         )
 
     def _serialize_cookies(self):
-        return json.dumps({"cookies": [self._cookie_to_dict(cookie) for cookie in self.cookies]})
+        return json.dumps({"cookies": [self._cookie_to_dict(cookie) for cookie in self._cookie_jar]})
 
     def _load_serialized_cookies(self, cookie_data):
-        self.cookies.clear()
+        self._cookie_jar.clear()
         for cookie in json.loads(cookie_data).get("cookies", []):
-            self.cookies.set_cookie(self._cookie_from_dict(cookie))
+            self._cookie_jar.set_cookie(self._cookie_from_dict(cookie))
 
     def _load_keychain_cookies(self):
         result = run_keychain(
@@ -190,7 +195,7 @@ class ClipperCardWebSession(requests.Session):
         except (KeyError, TypeError, ValueError, json.JSONDecodeError):
             logger.warning(f"Keychain cookies for {self._keychain_account} are unreadable; ignoring them")
             return False
-        loaded_cookies = list(self.cookies)
+        loaded_cookies = list(self._cookie_jar)
         logger.debug(f"Loaded {len(loaded_cookies)} cookies from macOS Keychain")
         return bool(loaded_cookies)
 
@@ -210,7 +215,7 @@ class ClipperCardWebSession(requests.Session):
         logger.debug(f"Saved cookies to macOS Keychain for {self._keychain_account}")
 
     def _clear_keychain_cookies(self):
-        self.cookies.clear()
+        self._cookie_jar.clear()
         result = run_keychain(
             "delete-generic-password",
             "-s",
@@ -225,11 +230,11 @@ class ClipperCardWebSession(requests.Session):
         if not self._cookie_jar_path.exists():
             return False
         try:
-            self.cookies.load(ignore_discard=True, ignore_expires=True)
+            self._cookie_jar.load(ignore_discard=True, ignore_expires=True)
         except LoadError:
             logger.warning(f"Cookie jar at {self._cookie_jar_path} is unreadable; ignoring it")
             return False
-        loaded_cookies = list(self.cookies)
+        loaded_cookies = list(self._cookie_jar)
         logger.debug(f"Loaded {len(loaded_cookies)} cookies from {self._cookie_jar_path}")
         return bool(loaded_cookies)
 
@@ -252,7 +257,7 @@ class ClipperCardWebSession(requests.Session):
             return
 
         self._cookie_jar_path.parent.mkdir(parents=True, exist_ok=True)
-        self.cookies.save(ignore_discard=True, ignore_expires=True)
+        self._cookie_jar.save(ignore_discard=True, ignore_expires=True)
         self._cookie_jar_path.chmod(0o600)
         logger.debug(f"Saved cookies to {self._cookie_jar_path}")
 
@@ -261,7 +266,7 @@ class ClipperCardWebSession(requests.Session):
             self._clear_keychain_cookies()
             return
 
-        self.cookies.clear()
+        self._cookie_jar.clear()
         if self._cookie_jar_path.exists():
             self._cookie_jar_path.unlink()
             logger.debug(f"Removed stale cookie jar at {self._cookie_jar_path}")
@@ -279,7 +284,7 @@ class ClipperCardWebSession(requests.Session):
         logger.debug(f"Dashboard-with-cookies response: {dashboard_resp.status_code}")
         logger.debug(f"Final URL after cookie reuse: {dashboard_resp.url}")
 
-        if dashboard_resp.ok and self._response_has_dashboard_data(dashboard_resp.text):
+        if not dashboard_resp.is_error and self._response_has_dashboard_data(dashboard_resp.text):
             self._dashboard_resp_text = dashboard_resp.text
             self._reused_cookies = True
             self._save_cookie_jar()
@@ -308,7 +313,7 @@ class ClipperCardWebSession(requests.Session):
         # Get login page to extract CSRF token
         logger.debug(f"Fetching login page: {self.LOGIN_URL}")
         login_landing_resp = self.get(self.LOGIN_URL)
-        if not login_landing_resp.ok:
+        if login_landing_resp.is_error:
             logger.error(f"Failed to get login page: {login_landing_resp.status_code}")
             raise ClipperCardError(
                 "Unable to reach ClipperCard.com login page. "
@@ -342,7 +347,7 @@ class ClipperCardWebSession(requests.Session):
         # Set Referer header for POST request
         post_headers = {"Referer": self.LOGIN_URL}
 
-        dashboard_resp = self.post(self.DASHBOARD_URL, data=req_data, headers=post_headers, allow_redirects=True)
+        dashboard_resp = self.post(self.DASHBOARD_URL, data=req_data, headers=post_headers)
         logger.debug(f"Dashboard response: {dashboard_resp.status_code}")
         logger.debug(f"Final URL after redirect: {dashboard_resp.url}")
 
@@ -350,7 +355,7 @@ class ClipperCardWebSession(requests.Session):
         logger.debug(f"Response headers: Content-Type={dashboard_resp.headers.get('Content-Type')}")
         logger.debug(f"Response cookies: {dict(dashboard_resp.cookies)}")
 
-        if not dashboard_resp.ok:
+        if dashboard_resp.is_error:
             logger.error(f"Failed to post login: {dashboard_resp.status_code}")
             logger.error(f"Response text (first 500 chars): {dashboard_resp.text[:500]}")
             raise ClipperCardError(
@@ -397,7 +402,7 @@ class ClipperCardWebSession(requests.Session):
 
         logger.debug(f"Fetching profile page: {self.PROFILE_URL}")
         profile_resp = self.get(self.PROFILE_URL)
-        if not profile_resp.ok:
+        if profile_resp.is_error:
             logger.warning(f"Failed to fetch profile page: {profile_resp.status_code}")
             self._profile_loaded = True
             self._profile_info = None
