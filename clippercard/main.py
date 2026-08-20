@@ -96,6 +96,13 @@ def _read_password(username):
     return password
 
 
+def _read_config(config_file_path):
+    """Load credentials.ini without interpolating % in passwords."""
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.read(config_file_path)
+    return parser
+
+
 def _get_config_or_arg_auth(args):
     """
     Finds/parses the username and password from either the args or a config file.
@@ -123,8 +130,7 @@ def _get_config_or_arg_auth(args):
                 "Use --username, optionally --password, or create a config file."
             )
     try:
-        parser = configparser.ConfigParser()
-        parser.read(config_file_path)
+        parser = _read_config(config_file_path)
         section = args.account
         username, password = parser.get(section, "username"), parser.get(section, "password")
     except configparser.NoSectionError as err:
@@ -142,8 +148,7 @@ def _config_auth_available(args):
     if not config_file_path.exists():
         return False
 
-    parser = configparser.ConfigParser()
-    parser.read(config_file_path)
+    parser = _read_config(config_file_path)
     try:
         section = args.account
         parser.get(section, "username")
@@ -189,8 +194,7 @@ def _config_option(args, option):
     if not config_file_path.exists():
         return None
 
-    parser = configparser.ConfigParser()
-    parser.read(config_file_path)
+    parser = _read_config(config_file_path)
     try:
         return parser.get(args.account, option).strip() or None
     except (configparser.NoSectionError, configparser.NoOptionError):

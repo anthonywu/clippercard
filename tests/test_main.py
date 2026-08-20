@@ -178,6 +178,26 @@ def test_read_password_rejects_an_empty_value():
         main._read_password("fresh@example.com")
 
 
+def test_get_client_auth_accepts_percent_signs_in_config_password(tmp_path):
+    config_path = tmp_path / "credentials.ini"
+    config_path.write_text(
+        """\
+[default]
+username = person@example.com
+password = 100%secret
+"""
+    )
+    args = SimpleNamespace(
+        account="default",
+        config=str(config_path),
+        credential_store="config",
+        username=None,
+        password=None,
+    )
+
+    assert main._get_client_auth(args) == (("person@example.com", "100%secret"), "config")
+
+
 def test_get_client_auth_returns_config_credentials_when_keychain_is_empty(tmp_path):
     config_path = tmp_path / "credentials.ini"
     config_path.write_text(
