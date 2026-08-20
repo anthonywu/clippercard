@@ -1,23 +1,4 @@
-"""
-Copyright (c) 2012-2021 (https://github.com/clippercard/clippercard-python)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-"""
+"""Authenticated HTTP session for clippercard.com."""
 
 # === imports ===
 
@@ -46,11 +27,7 @@ class ClipperCardAuthError(ClipperCardError):
     """unable to login with provided credentials"""
 
 
-class ClipperCardContentError(ClipperCardError):
-    """unable to recognize and parse web content"""
-
-
-def run_keychain(*args):
+def _run_keychain(*args: str) -> subprocess.CompletedProcess[str]:
     if sys.platform != "darwin":
         raise ClipperCardError("macOS Keychain storage is only supported on macOS")
     return subprocess.run(
@@ -58,6 +35,7 @@ def run_keychain(*args):
         check=False,
         capture_output=True,
         text=True,
+        timeout=30,
     )
 
 
@@ -93,10 +71,17 @@ class ClipperCardWebSession(httpx.Client):
         "Upgrade-Insecure-Requests": "1",
     }
 
-    def __init__(self, username=None, password=None, cookie_jar_path=None, cookie_store="file", keychain_account=None):
+    def __init__(
+        self,
+        username: str | None = None,
+        password: str | None = None,
+        cookie_jar_path: str | Path | None = None,
+        cookie_store: str = "file",
+        keychain_account: str | None = None,
+    ) -> None:
         # Follow redirects and bound every request: callers expect final-page
         # responses, and hanging forever is worse than a generous timeout.
-        httpx.Client.__init__(self, follow_redirects=True, timeout=30.0)
+        super().__init__(follow_redirects=True, timeout=30.0)
         self.headers.update(self.HEADERS)
         self._cookie_jar_path = Path(cookie_jar_path).expanduser() if cookie_jar_path else self.COOKIE_JAR_PATH
         self._cookie_store = cookie_store
@@ -106,22 +91,27 @@ class ClipperCardWebSession(httpx.Client):
         self._cookie_jar = MozillaCookieJar(str(self._cookie_jar_path))
         self.cookies = self._cookie_jar
         self._dashboard_resp_text = None
+        self._cards = None
         self._profile_info = None
         self._profile_loaded = False
         self._reused_cookies = False
-        if username and password:
-            self.login(username, password)
+        try:
+            if username and password:
+                self.login(username, password)
+        except BaseException:
+            self.close()
+            raise
 
     @property
-    def reused_cookies(self):
+    def reused_cookies(self) -> bool:
         return self._reused_cookies
 
     @property
-    def cookie_jar_path(self):
+    def cookie_jar_path(self) -> Path:
         return self._cookie_jar_path
 
     @property
-    def cookie_storage_label(self):
+    def cookie_storage_label(self) -> str:
         if self._cookie_store == "keychain":
             return f"macOS Keychain item {self.COOKIE_STORE_SERVICE}:{self._keychain_account}"
         return str(self._cookie_jar_path)
@@ -179,7 +169,7 @@ class ClipperCardWebSession(httpx.Client):
             self._cookie_jar.set_cookie(self._cookie_from_dict(cookie))
 
     def _load_keychain_cookies(self):
-        result = run_keychain(
+        result = _run_keychain(
             "find-generic-password",
             "-s",
             self.COOKIE_STORE_SERVICE,
@@ -200,7 +190,7 @@ class ClipperCardWebSession(httpx.Client):
         return bool(loaded_cookies)
 
     def _save_keychain_cookies(self):
-        result = run_keychain(
+        result = _run_keychain(
             "add-generic-password",
             "-U",
             "-s",
@@ -216,7 +206,7 @@ class ClipperCardWebSession(httpx.Client):
 
     def _clear_keychain_cookies(self):
         self._cookie_jar.clear()
-        result = run_keychain(
+        result = _run_keychain(
             "delete-generic-password",
             "-s",
             self.COOKIE_STORE_SERVICE,
@@ -286,6 +276,7 @@ class ClipperCardWebSession(httpx.Client):
 
         if not dashboard_resp.is_error and self._response_has_dashboard_data(dashboard_resp.text):
             self._dashboard_resp_text = dashboard_resp.text
+            self._cards = None
             self._reused_cookies = True
             self._save_cookie_jar()
             logger.debug("Saved cookies are still valid")
@@ -293,11 +284,12 @@ class ClipperCardWebSession(httpx.Client):
 
         logger.debug("Saved cookies did not yield a valid dashboard; falling back to login")
         self._dashboard_resp_text = None
+        self._cards = None
         self._reused_cookies = False
         self._clear_cookie_jar()
         return None
 
-    def login(self, username, password):
+    def login(self, username: str, password: str) -> httpx.Response:
         """
         Authenticate user and fetch dashboard page.
         1. Try saved cookies against /dashboard
@@ -367,6 +359,7 @@ class ClipperCardWebSession(httpx.Client):
         if parsed_cards or "patronDetails" in dashboard_resp.text:
             logger.debug("Login successful, dashboard page received with %d parsed cards", len(parsed_cards))
             self._dashboard_resp_text = dashboard_resp.text
+            self._cards = None
             self._reused_cookies = False
             self._save_cookie_jar()
             return dashboard_resp
@@ -388,10 +381,11 @@ class ClipperCardWebSession(httpx.Client):
 
         logger.debug("Login response did not include patronDetails; keeping page for downstream parsing")
         self._dashboard_resp_text = dashboard_resp.text
+        self._cards = None
         return dashboard_resp
 
     @property
-    def profile_info(self):
+    def profile_info(self) -> parser.Profile | None:
         """
         Returns *Profile* namedtuples associated with logged in user.
         """
@@ -420,13 +414,14 @@ class ClipperCardWebSession(httpx.Client):
         return self._profile_info
 
     @property
-    def cards(self):
+    def cards(self) -> list[parser.Card]:
         """
         Returns list of *Card* namedtuples associated with logged in user
         """
         if not self._dashboard_resp_text:
             raise ClipperCardError("Must login first")
-        logger.debug("Parsing cards from dashboard")
-        cards = parser.parse_dashboard_cards(self._dashboard_resp_text)
-        logger.debug("Found %d cards", len(cards))
-        return cards
+        if self._cards is None:
+            logger.debug("Parsing cards from dashboard")
+            self._cards = parser.parse_dashboard_cards(self._dashboard_resp_text)
+            logger.debug("Found %d cards", len(self._cards))
+        return self._cards

@@ -91,6 +91,7 @@ def test_login_accepts_dashboard_response_with_generic_form_errors(tmp_path):
     assert resp.url == ClipperCardWebSession.DASHBOARD_URL
     assert session._dashboard_resp_text == dashboard_html
     assert len(session.cards) == 8
+    assert session.cards is session.cards
 
 
 def test_login_reuses_saved_cookies_when_dashboard_loads(tmp_path):
@@ -273,6 +274,19 @@ def test_keychain_cookie_store_requires_macos():
         session._load_cookie_jar()
 
     assert str(exc.value) == "macOS Keychain storage is only supported on macOS"
+
+
+def test_constructor_closes_client_when_login_fails(tmp_path):
+    cookie_jar_path = tmp_path / "clippercard.cookies"
+
+    with (
+        patch.object(ClipperCardWebSession, "login", side_effect=ClipperCardError("nope")),
+        patch.object(ClipperCardWebSession, "close") as close_mock,
+        pytest.raises(ClipperCardError, match="nope"),
+    ):
+        ClipperCardWebSession("person@example.com", "supersecret", cookie_jar_path=cookie_jar_path)
+
+    close_mock.assert_called_once()
 
 
 def test_profile_info_fetches_and_parses_profile_page(tmp_path):

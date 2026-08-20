@@ -1,23 +1,4 @@
-"""
-Copyright (c) 2012-2021 (https://github.com/clippercard/clippercard-python)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-"""
+"""Table and JSON rendering for account summaries."""
 
 import json
 import os
@@ -105,7 +86,9 @@ def _redact_private_info(label, value):
         case "name":
             return " ".join([part[:2] + "***" for part in value.split()])
         case "email":
-            local, domain = value.split("@")
+            local, sep, domain = value.partition("@")
+            if not sep or not local or not domain:
+                return "***"
             return local[0] + "***@" + domain
         case "mailing_address":
             return "***"
@@ -116,6 +99,8 @@ def _redact_private_info(label, value):
                 redacted = f"{groups[0] + groups[1] if groups[0] else ''}***-***-{groups[2]}"
                 return redacted
         case "serial_number":
+            if len(value) <= 4:
+                return "*" * len(value)
             return ("*" * (len(value) - 4)) + value[-4:]
     return value
 
@@ -220,7 +205,7 @@ def _values_by_column(card):
     return {name: ", ".join(part for part in values if part) for name, values in grouped.items()}
 
 
-def summary_json_output(user_profile, cards, show_private=False):
+def summary_json_output(user_profile: object | None, cards: list | None, show_private: bool = False) -> str:
     """
     Serializes a user profile and its associated cards and products as JSON.
     """
@@ -254,7 +239,9 @@ def summary_json_output(user_profile, cards, show_private=False):
     return json.dumps({"profile": profile, "cards": card_items}, indent=2)
 
 
-def tabular_output(user_profile, cards, show_private=False, color=False):
+def tabular_output(
+    user_profile: object | None, cards: list | None, show_private: bool = False, color: bool = False
+) -> str:
     """Pretty-print a profile and cards. Cards are highest Cash Value first."""
     color = _use_color(color)
     output_parts = []

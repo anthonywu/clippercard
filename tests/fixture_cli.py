@@ -5,6 +5,7 @@ ClipperCard fixture parsing CLI for tests and development.
 import argparse
 import logging
 import sys
+from pathlib import Path
 
 import clippercard
 import clippercard.parser
@@ -42,8 +43,7 @@ def main():
         sys.exit(1)
 
     try:
-        with open(args.html_file) as f:
-            html_content = f.read()
+        html_content = Path(args.html_file).read_text(encoding="utf-8")
 
         if args.command == "parse-dashboard":
             cards = clippercard.parser.parse_dashboard_cards(html_content)
@@ -51,10 +51,10 @@ def main():
         elif args.command == "parse-profile":
             profile = clippercard.parser.parse_profile_page(html_content)
             print(clippercard.porcelain.tabular_output(profile, None))
-    except FileNotFoundError as e:
-        sys.exit(str(e))
+    except FileNotFoundError as err:
+        print(err, file=sys.stderr)
+        raise SystemExit(1) from err
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     main()

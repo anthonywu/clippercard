@@ -7,13 +7,14 @@ import configparser
 import getpass
 import json
 import logging
+import os
 import re
 import sys
 from pathlib import Path
 
 import clippercard
 import clippercard.porcelain
-from clippercard.client import run_keychain
+from clippercard.client import _run_keychain
 
 
 class ClipperCardCommandError(Exception):
@@ -35,12 +36,15 @@ password = <replace_with_your_password>
 # credential_store = keychain
 # cookie_store = keychain
 """
-    config_path.write_text(template)
+    fd = os.open(config_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(template)
+    os.chmod(config_path, 0o600)
     print(f"Created config file: {config_path}")
 
 
 def _load_keychain_auth(account):
-    result = run_keychain(
+    result = _run_keychain(
         "find-generic-password",
         "-s",
         _CREDENTIAL_STORE_SERVICE,
@@ -60,12 +64,12 @@ def _load_keychain_auth(account):
 def _keychain_item_exists(service, account):
     if sys.platform != "darwin":
         return False
-    result = run_keychain("find-generic-password", "-s", service, "-a", account)
+    result = _run_keychain("find-generic-password", "-s", service, "-a", account)
     return result.returncode == 0
 
 
 def _save_keychain_auth(account, username, password):
-    result = run_keychain(
+    result = _run_keychain(
         "add-generic-password",
         "-U",
         "-s",
@@ -96,6 +100,13 @@ def _read_password(username):
     return password
 
 
+def _read_config(config_file_path):
+    """Load credentials.ini without interpolating % in passwords."""
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.read(config_file_path, encoding="utf-8")
+    return parser
+
+
 def _get_config_or_arg_auth(args):
     """
     Finds/parses the username and password from either the args or a config file.
@@ -111,20 +122,24 @@ def _get_config_or_arg_auth(args):
 
     config_file_path = Path(args.config).expanduser()
     if not config_file_path.exists():
-        response = input(f"Config file {config_file_path} does not exist. Create it? (y/n): ").strip().lower()
+        missing = (
+            f"Login config file {config_file_path} does not exist. "
+            "Use --username, optionally --password, or create a config file."
+        )
+        if not sys.stdin.isatty():
+            raise ClipperCardCommandError(missing)
+        try:
+            response = input(f"Config file {config_file_path} does not exist. Create it? (y/n): ").strip().lower()
+        except (EOFError, KeyboardInterrupt) as err:
+            raise ClipperCardCommandError(missing) from err
         if response == "y":
             _init_config_file(config_file_path)
             raise ClipperCardCommandError(
                 f"Config file created. Please edit {config_file_path} and add your credentials."
             )
-        else:
-            raise ClipperCardCommandError(
-                f"Login config file {config_file_path} does not exist. "
-                "Use --username, optionally --password, or create a config file."
-            )
+        raise ClipperCardCommandError(missing)
     try:
-        parser = configparser.ConfigParser()
-        parser.read(config_file_path)
+        parser = _read_config(config_file_path)
         section = args.account
         username, password = parser.get(section, "username"), parser.get(section, "password")
     except configparser.NoSectionError as err:
@@ -142,8 +157,7 @@ def _config_auth_available(args):
     if not config_file_path.exists():
         return False
 
-    parser = configparser.ConfigParser()
-    parser.read(config_file_path)
+    parser = _read_config(config_file_path)
     try:
         section = args.account
         parser.get(section, "username")
@@ -157,7 +171,8 @@ def _arg_auth_available(args):
     return bool(args.username)
 
 
-def _get_client_auth_with_source(args):
+def _get_client_auth(args):
+    """Resolve (username, password) plus where they came from ("config" or "keychain")."""
     if args.credential_store == "keychain":
         if _arg_auth_available(args):
             return _get_config_or_arg_auth(args), "config"
@@ -176,11 +191,6 @@ def _get_client_auth_with_source(args):
     return _get_config_or_arg_auth(args), "config"
 
 
-def _get_client_auth(args):
-    """Resolve (username, password) plus where they came from ("config" or "keychain")."""
-    return _get_client_auth_with_source(args)
-
-
 def _config_option(args, option):
     config_arg = getattr(args, "config", "") or ""
     if not config_arg:
@@ -189,8 +199,7 @@ def _config_option(args, option):
     if not config_file_path.exists():
         return None
 
-    parser = configparser.ConfigParser()
-    parser.read(config_file_path)
+    parser = _read_config(config_file_path)
     try:
         return parser.get(args.account, option).strip() or None
     except (configparser.NoSectionError, configparser.NoOptionError):
@@ -327,7 +336,7 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
     parser = _build_parser()
     args = parser.parse_args()
 
@@ -356,38 +365,43 @@ def main():
             cookie_store=cookie_store,
             keychain_account=args.account,
         )
-        saved_keychain_credentials = False
-        if credential_store == "keychain" and credential_source != "keychain" and not session.reused_cookies:
-            _save_keychain_auth(args.account, username, password)
-            saved_keychain_credentials = True
-        if args.command == "summary":
-            output = args.output or ("table" if sys.stdout.isatty() else "json")
-            if saved_keychain_credentials:
-                _print_status(
-                    "Saved login credentials to macOS Keychain. "
-                    "You can delete the plaintext username/password from the config file if you no longer need them.",
-                    output,
-                )
-            if session.reused_cookies:
-                cookie_storage_label = getattr(session, "cookie_storage_label", session.cookie_jar_path)
-                _print_status(f"Reusing saved cookies from {cookie_storage_label}", output)
-            if output == "json":
-                print(
-                    clippercard.porcelain.summary_json_output(
-                        session.profile_info, session.cards, show_private=args.show_private
+        try:
+            saved_keychain_credentials = False
+            if credential_store == "keychain" and credential_source != "keychain" and not session.reused_cookies:
+                _save_keychain_auth(args.account, username, password)
+                saved_keychain_credentials = True
+            if args.command == "summary":
+                output = args.output or ("table" if sys.stdout.isatty() else "json")
+                if saved_keychain_credentials:
+                    _print_status(
+                        "Saved login credentials to macOS Keychain. "
+                        "You can delete the plaintext username/password from the config file "
+                        "if you no longer need them.",
+                        output,
                     )
-                )
-            else:
-                print(
-                    clippercard.porcelain.tabular_output(
-                        session.profile_info,
-                        session.cards,
-                        show_private=args.show_private,
-                        color=sys.stdout.isatty(),
+                if session.reused_cookies:
+                    cookie_storage_label = getattr(session, "cookie_storage_label", session.cookie_jar_path)
+                    _print_status(f"Reusing saved cookies from {cookie_storage_label}", output)
+                if output == "json":
+                    print(
+                        clippercard.porcelain.summary_json_output(
+                            session.profile_info, session.cards, show_private=args.show_private
+                        )
                     )
-                )
-    except (clippercard.client.ClipperCardError, ClipperCardCommandError, FileNotFoundError) as e:
-        sys.exit(str(e))
+                else:
+                    print(
+                        clippercard.porcelain.tabular_output(
+                            session.profile_info,
+                            session.cards,
+                            show_private=args.show_private,
+                            color=sys.stdout.isatty(),
+                        )
+                    )
+        finally:
+            session.close()
+    except (clippercard.client.ClipperCardError, ClipperCardCommandError) as err:
+        print(err, file=sys.stderr)
+        raise SystemExit(1) from err
 
 
 if __name__ == "__main__":

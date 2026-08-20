@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "clippercard"
-version = "202608.19.4"
+version = "202608.20.1"
 description = "Unofficial Python API for Clipper Card (transportation pass used in the SF Bay Area)"
 readme = "README.md"
 license = "MIT"
@@ -19,7 +19,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -58,5 +57,3 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "G"]
 
 [tool.uv.build-backend]
 module-root = ""
-# Dev-only fixture parsing helper (just test-cli); not part of the installed CLI
-wheel-exclude = ["clippercard/test_cli.py"]
