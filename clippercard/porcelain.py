@@ -20,6 +20,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 import json
+import os
 import re
 from io import StringIO
 
@@ -32,18 +33,69 @@ _CONSOLE_WIDTH = 1000
 _CASH_COLUMN = "Cash Value"
 _PASS_COLUMN = "Pass"
 _MONEY_VALUE = re.compile(r"^\$\d+\.\d{2}$")
+_BORDER_STYLE = "dodger_blue2"
+_HEADER_STYLE = "bold bright_white on dodger_blue2"
+_ROW_HEADER_STYLE = "bold"
+_ROW_STYLES = ("", "on grey7")
+_LABEL_STYLE = "bold cyan"
+_MONEY_STYLE = "bold green"
+_DIM_STYLE = "dim"
+_STATUS_ACTIVE_STYLE = "bold green"
+_STATUS_OTHER_STYLE = "yellow"
 
 
-def _render_table(table):
+def _use_color(color):
+    return bool(color) and "NO_COLOR" not in os.environ
+
+
+def _render_table(table, color=False):
     buffer = StringIO()
+    color = _use_color(color)
     console = Console(
         file=buffer,
-        force_terminal=False,
-        color_system=None,
+        force_terminal=color,
+        color_system="256" if color else None,
         width=_CONSOLE_WIDTH,
+        highlight=False,
     )
     console.print(table)
     return buffer.getvalue().rstrip()
+
+
+def _table_kwargs(color, *, show_header=True):
+    kwargs = {
+        "box": box.ROUNDED if color else box.ASCII,
+        "show_header": show_header,
+    }
+    if color:
+        kwargs["border_style"] = _BORDER_STYLE
+        kwargs["row_styles"] = list(_ROW_STYLES)
+        if show_header:
+            kwargs["header_style"] = _HEADER_STYLE
+    return kwargs
+
+
+def _column_style(*, color, row_header=False):
+    if not color:
+        return {}
+    style = {"header_style": _HEADER_STYLE}
+    if row_header:
+        style["style"] = _ROW_HEADER_STYLE
+    return style
+
+
+def _status_style(status):
+    if str(status).casefold() == "active":
+        return _STATUS_ACTIVE_STYLE
+    return _STATUS_OTHER_STYLE
+
+
+def _money_cell(value, color):
+    text = Text(value, justify="right")
+    if color and value:
+        cents = _money_cents(value)
+        text.stylize(_MONEY_STYLE if cents and cents > 0 else _DIM_STYLE)
+    return text
 
 
 def _redact_private_info(label, value):
@@ -103,6 +155,24 @@ def _item_name_value(item):
 
 def _is_money_value(value):
     return bool(value) and _MONEY_VALUE.fullmatch(value) is not None
+
+
+def _money_cents(value):
+    if not _is_money_value(value):
+        return None
+    dollars, cents = value[1:].split(".")
+    return int(dollars) * 100 + int(cents)
+
+
+def _sorted_cards_by_cash_value(cards):
+    def sort_key(item):
+        index, card = item
+        cents = _money_cents(_values_by_column(card).get(_CASH_COLUMN, ""))
+        if cents is None:
+            return (1, 0, index)
+        return (0, -cents, index)
+
+    return [card for _, card in sorted(enumerate(cards), key=sort_key)]
 
 
 def _column_names_for_cards(cards):
@@ -184,15 +254,15 @@ def summary_json_output(user_profile, cards, show_private=False):
     return json.dumps({"profile": profile, "cards": card_items}, indent=2)
 
 
-def tabular_output(user_profile, cards, show_private=False):
-    """
-    Pretty prints a user profile and its associated cards and products.
-    """
+def tabular_output(user_profile, cards, show_private=False, color=False):
+    """Pretty-print a profile and cards. Cards are highest Cash Value first."""
+    color = _use_color(color)
     output_parts = []
 
     if user_profile:
-        profile_table = Table(show_header=False, box=box.ASCII)
-        profile_table.add_column("name", justify="right", no_wrap=True)
+        profile_table = Table(**_table_kwargs(color, show_header=False))
+        profile_kwargs = {"style": _LABEL_STYLE} if color else {}
+        profile_table.add_column("name", justify="right", no_wrap=True, **profile_kwargs)
         profile_table.add_column("value", justify="left", no_wrap=True)
         for label, value in user_profile._asdict().items():
             if value in (None, ""):
@@ -201,18 +271,19 @@ def tabular_output(user_profile, cards, show_private=False):
                 value = _redact_private_info(label, value)
             profile_table.add_row(Text(str(label)), Text(str(value)))
         if profile_table.row_count:
-            output_parts.append(_render_table(profile_table))
+            output_parts.append(_render_table(profile_table, color=color))
 
     if cards:
+        cards = _sorted_cards_by_cash_value(cards)
         columns = _column_names_for_cards(cards)
-        card_table = Table(box=box.ASCII)
-        card_table.add_column("#", justify="right", no_wrap=True)
-        card_table.add_column("Name", justify="left", no_wrap=True)
-        card_table.add_column("Serial", justify="left", no_wrap=True)
-        card_table.add_column("Type", justify="left", no_wrap=True)
-        card_table.add_column("Status", justify="left", no_wrap=True)
+        card_table = Table(**_table_kwargs(color))
+        card_table.add_column("#", justify="right", no_wrap=True, **_column_style(color=color, row_header=True))
+        card_table.add_column("Name", justify="left", no_wrap=True, **_column_style(color=color, row_header=True))
+        card_table.add_column("Serial", justify="left", no_wrap=True, **_column_style(color=color))
+        card_table.add_column("Type", justify="left", no_wrap=True, **_column_style(color=color))
+        card_table.add_column("Status", justify="left", no_wrap=True, **_column_style(color=color))
         for column in columns:
-            card_table.add_column(column, no_wrap=True)
+            card_table.add_column(column, no_wrap=True, **_column_style(color=color))
         rows = []
         for i, card in enumerate(cards, 1):
             serial = card.serial_number
@@ -224,15 +295,15 @@ def tabular_output(user_profile, cards, show_private=False):
             card_table.add_row(
                 str(i),
                 str(card.nickname),
-                str(serial),
+                Text(str(serial), style=_DIM_STYLE) if color else str(serial),
                 str(card.type),
-                str(card.status),
+                Text(str(card.status), style=_status_style(card.status)) if color else str(card.status),
                 *[
-                    Text(values.get(column, ""), justify="right") if column in money_columns else values.get(column, "")
+                    _money_cell(values.get(column, ""), color) if column in money_columns else values.get(column, "")
                     for column in columns
                 ],
             )
-        output_parts.append(_render_table(card_table))
+        output_parts.append(_render_table(card_table, color=color))
     elif cards is not None:
         output_parts.append("No cards registered")
 

@@ -380,7 +380,10 @@ def main():
             else:
                 print(
                     clippercard.porcelain.tabular_output(
-                        session.profile_info, session.cards, show_private=args.show_private
+                        session.profile_info,
+                        session.cards,
+                        show_private=args.show_private,
+                        color=sys.stdout.isatty(),
                     )
                 )
     except (clippercard.client.ClipperCardError, ClipperCardCommandError, FileNotFoundError) as e:
