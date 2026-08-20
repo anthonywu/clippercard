@@ -178,6 +178,16 @@ def test_read_password_rejects_an_empty_value():
         main._read_password("fresh@example.com")
 
 
+def test_init_config_file_creates_credentials_with_mode_600(tmp_path):
+    config_path = tmp_path / "clippercard" / "credentials.ini"
+
+    main._init_config_file(config_path)
+
+    assert config_path.exists()
+    assert config_path.stat().st_mode & 0o777 == 0o600
+    assert "username = <replace_with_your_email>" in config_path.read_text()
+
+
 def test_get_client_auth_accepts_percent_signs_in_config_password(tmp_path):
     config_path = tmp_path / "credentials.ini"
     config_path.write_text(

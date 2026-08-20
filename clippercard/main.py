@@ -7,6 +7,7 @@ import configparser
 import getpass
 import json
 import logging
+import os
 import re
 import sys
 from pathlib import Path
@@ -35,7 +36,10 @@ password = <replace_with_your_password>
 # credential_store = keychain
 # cookie_store = keychain
 """
-    config_path.write_text(template)
+    fd = os.open(config_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as handle:
+        handle.write(template)
+    os.chmod(config_path, 0o600)
     print(f"Created config file: {config_path}")
 
 
