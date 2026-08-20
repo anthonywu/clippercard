@@ -35,6 +35,7 @@ _PASS_COLUMN = "Pass"
 _MONEY_VALUE = re.compile(r"^\$\d+\.\d{2}$")
 _BORDER_STYLE = "dodger_blue2"
 _HEADER_STYLE = "bold bright_white on dodger_blue2"
+_ROW_HEADER_STYLE = "bold"
 _ROW_STYLES = ("", "on grey15")
 _LABEL_STYLE = "bold cyan"
 _MONEY_STYLE = "bold green"
@@ -72,6 +73,15 @@ def _table_kwargs(color, *, show_header=True):
         if show_header:
             kwargs["header_style"] = _HEADER_STYLE
     return kwargs
+
+
+def _column_style(*, color, row_header=False):
+    if not color:
+        return {}
+    style = {"header_style": _HEADER_STYLE}
+    if row_header:
+        style["style"] = _ROW_HEADER_STYLE
+    return style
 
 
 def _status_style(status):
@@ -251,15 +261,15 @@ def tabular_output(user_profile, cards, show_private=False, color=False):
 
     if user_profile:
         profile_table = Table(**_table_kwargs(color, show_header=False))
-        profile_table.add_column("name", justify="right", no_wrap=True)
+        profile_kwargs = {"style": _LABEL_STYLE} if color else {}
+        profile_table.add_column("name", justify="right", no_wrap=True, **profile_kwargs)
         profile_table.add_column("value", justify="left", no_wrap=True)
         for label, value in user_profile._asdict().items():
             if value in (None, ""):
                 continue
             if not show_private:
                 value = _redact_private_info(label, value)
-            label_cell = Text(str(label), style=_LABEL_STYLE) if color else Text(str(label))
-            profile_table.add_row(label_cell, Text(str(value)))
+            profile_table.add_row(Text(str(label)), Text(str(value)))
         if profile_table.row_count:
             output_parts.append(_render_table(profile_table, color=color))
 
@@ -267,13 +277,13 @@ def tabular_output(user_profile, cards, show_private=False, color=False):
         cards = _sorted_cards_by_cash_value(cards)
         columns = _column_names_for_cards(cards)
         card_table = Table(**_table_kwargs(color))
-        card_table.add_column("#", justify="right", no_wrap=True)
-        card_table.add_column("Name", justify="left", no_wrap=True)
-        card_table.add_column("Serial", justify="left", no_wrap=True)
-        card_table.add_column("Type", justify="left", no_wrap=True)
-        card_table.add_column("Status", justify="left", no_wrap=True)
+        card_table.add_column("#", justify="right", no_wrap=True, **_column_style(color=color, row_header=True))
+        card_table.add_column("Name", justify="left", no_wrap=True, **_column_style(color=color, row_header=True))
+        card_table.add_column("Serial", justify="left", no_wrap=True, **_column_style(color=color))
+        card_table.add_column("Type", justify="left", no_wrap=True, **_column_style(color=color))
+        card_table.add_column("Status", justify="left", no_wrap=True, **_column_style(color=color))
         for column in columns:
-            card_table.add_column(column, no_wrap=True)
+            card_table.add_column(column, no_wrap=True, **_column_style(color=color))
         rows = []
         for i, card in enumerate(cards, 1):
             serial = card.serial_number
@@ -283,8 +293,8 @@ def tabular_output(user_profile, cards, show_private=False, color=False):
         money_columns = _money_columns(columns, [values for _, _, _, values in rows])
         for i, card, serial, values in rows:
             card_table.add_row(
-                Text(str(i), style=_DIM_STYLE) if color else str(i),
-                Text(str(card.nickname), style="bold") if color else str(card.nickname),
+                str(i),
+                str(card.nickname),
                 Text(str(serial), style=_DIM_STYLE) if color else str(serial),
                 str(card.type),
                 Text(str(card.status), style=_status_style(card.status)) if color else str(card.status),

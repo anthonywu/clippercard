@@ -2,7 +2,16 @@ import json
 from collections import namedtuple
 from types import SimpleNamespace
 
-from clippercard.porcelain import summary_json_output, tabular_output
+from rich.ansi import AnsiDecoder
+from rich.style import Style
+
+from clippercard.porcelain import (
+    _HEADER_STYLE,
+    _ROW_HEADER_STYLE,
+    _column_style,
+    summary_json_output,
+    tabular_output,
+)
 
 
 def test_tabular_output_renders_profile_and_cards_as_ascii_tables():
@@ -336,6 +345,29 @@ def test_summary_json_output_renders_profile_and_cards_without_private_info():
     }
 
 
+def test_column_style_bolds_headers():
+    assert _column_style(color=False) == {}
+    assert _column_style(color=True) == {"header_style": _HEADER_STYLE}
+    assert _column_style(color=True, row_header=True) == {
+        "header_style": _HEADER_STYLE,
+        "style": _ROW_HEADER_STYLE,
+    }
+
+
+def _decoded_lines(output):
+    return list(AnsiDecoder().decode(output))
+
+
+def _is_bold_at(text, index):
+    for span in text.spans:
+        if not (span.start <= index < span.end):
+            continue
+        style = span.style if isinstance(span.style, Style) else Style.parse(str(span.style))
+        if style.bold:
+            return True
+    return False
+
+
 def test_tabular_output_emits_ansi_when_color_is_enabled(monkeypatch):
     monkeypatch.delenv("NO_COLOR", raising=False)
     cards = [
@@ -363,6 +395,30 @@ def test_tabular_output_emits_ansi_when_color_is_enabled(monkeypatch):
     assert "╭" in output
     assert "Phone" in output
     assert "Watch" in output
+
+
+def test_tabular_output_bolds_column_and_row_headers(monkeypatch):
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    cards = [
+        SimpleNamespace(
+            nickname="Phone",
+            serial_number="123456788820",
+            type="Adult",
+            status="Active",
+            products=[SimpleNamespace(name="Cash Value", value="$244.55")],
+            features=[],
+        )
+    ]
+
+    output = tabular_output(None, cards, show_private=False, color=True)
+    lines = _decoded_lines(output)
+    header = next(line for line in lines if "Name" in line.plain and "Serial" in line.plain)
+    row = next(line for line in lines if "Phone" in line.plain)
+
+    assert _is_bold_at(header, header.plain.find("#"))
+    assert _is_bold_at(header, header.plain.find("Name"))
+    assert _is_bold_at(row, row.plain.find("Phone"))
+    assert _is_bold_at(row, row.plain.find("1"))
 
 
 def test_tabular_output_stays_plain_ascii_by_default():

@@ -1,4 +1,4 @@
-v202608.19.4, 2026-08-19 sort summary table cards by Cash Value descending; colorize TTY tables (ASCII when piped or NO_COLOR)
+v202608.19.4, 2026-08-19 sort summary table cards by Cash Value descending; colorize TTY tables with bold row/column headers (ASCII when piped or NO_COLOR)
 v202608.19.3, 2026-08-19 card summary table uses one row per card with a column per purse; parse agency purses from purseList instead of hardcoding bartPurse
 v202608.19.2, 2026-08-19 replace requests/urllib3 with httpx; stop advertising br/zstd Accept-Encoding without decoders installed; keep httpx per-request logs behind --debug; release with uv build/uv publish instead of twine; add gated release workflow; code health: fix pass-expiry crash on missing endDateTime, drop dead parsers and print_summary, NamedTuple models, pathlib config handling, lazy logging, exclude dev helper from wheel
 v202608.19.1, 2026-08-19 add opt-in macOS Keychain storage for credentials and cookies, with config-file defaults
