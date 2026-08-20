@@ -16,7 +16,7 @@ from clippercard.client import ClipperCardAuthError, ClipperCardError
 class DummySession:
     def __init__(self, cookie_jar_path=None, reused_cookies=False):
         self.reused_cookies = reused_cookies
-        self.cookie_jar_path = cookie_jar_path or Path("/tmp/auth.cookies")
+        self.cookie_jar_path = cookie_jar_path or Path("auth.cookies")
         self.profile_info = None
         self.cards = []
         self.closed = False
@@ -435,7 +435,7 @@ credential_store = vault
 
 
 def test_summary_uses_account_specific_cookie_jar_path():
-    expected_cookie_path = Path("/tmp/auth.other.cookies")
+    expected_cookie_path = Path("auth.other.cookies")
 
     with (
         patch.object(
@@ -485,7 +485,7 @@ def test_summary_closes_session():
 
 
 def test_summary_can_use_keychain_cookie_store():
-    expected_cookie_path = Path("/tmp/auth.other.cookies")
+    expected_cookie_path = Path("auth.other.cookies")
 
     with (
         patch.object(
@@ -521,7 +521,7 @@ def test_summary_can_use_keychain_cookie_store():
 
 
 def test_summary_saves_credentials_to_keychain_after_login(capsys):
-    expected_cookie_path = Path("/tmp/auth.cookies")
+    expected_cookie_path = Path("auth.cookies")
     saved = {}
 
     def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
@@ -577,7 +577,7 @@ def test_summary_saves_credentials_to_keychain_after_login(capsys):
 
 
 def test_summary_does_not_resave_credentials_loaded_from_keychain():
-    expected_cookie_path = Path("/tmp/auth.cookies")
+    expected_cookie_path = Path("auth.cookies")
     commands_seen = []
 
     def fake_run(command, check=False, capture_output=False, text=False, timeout=None):
@@ -620,7 +620,7 @@ def test_summary_does_not_resave_credentials_loaded_from_keychain():
 
 
 def test_summary_does_not_save_credentials_when_session_reuses_cookies():
-    expected_cookie_path = Path("/tmp/auth.cookies")
+    expected_cookie_path = Path("auth.cookies")
     commands_seen = []
 
     def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
@@ -665,7 +665,7 @@ def test_summary_does_not_save_credentials_when_session_reuses_cookies():
 
 
 def test_summary_does_not_save_credentials_when_login_fails(capsys):
-    expected_cookie_path = Path("/tmp/auth.cookies")
+    expected_cookie_path = Path("auth.cookies")
     commands_seen = []
 
     def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
@@ -710,7 +710,7 @@ def test_summary_does_not_save_credentials_when_login_fails(capsys):
 
 
 def test_summary_can_output_json_without_cookie_message_on_stdout(capsys):
-    expected_cookie_path = Path("/tmp/auth.cookies")
+    expected_cookie_path = Path("auth.cookies")
 
     with (
         patch.object(
@@ -734,7 +734,7 @@ def test_summary_can_output_json_without_cookie_message_on_stdout(capsys):
 
 
 def test_summary_defaults_to_json_when_stdout_is_piped(capsys):
-    expected_cookie_path = Path("/tmp/auth.cookies")
+    expected_cookie_path = Path("auth.cookies")
 
     with (
         patch.object(
@@ -766,7 +766,7 @@ def test_summary_enables_table_color_on_tty():
             ["clippercard", "summary", "--credential-store", "config", "--cookie-store", "file"],
         ),
         patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
-        patch("clippercard.main._cookie_jar_path_for_account", return_value=Path("/tmp/auth.cookies")),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=Path("auth.cookies")),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),
         patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output") as table_mock,
         patch("clippercard.main.sys.stdout.isatty", return_value=True),
@@ -785,7 +785,7 @@ def test_summary_disables_table_color_when_piped():
             ["clippercard", "summary", "--output", "table", "--credential-store", "config", "--cookie-store", "file"],
         ),
         patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
-        patch("clippercard.main._cookie_jar_path_for_account", return_value=Path("/tmp/auth.cookies")),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=Path("auth.cookies")),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),
         patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output") as table_mock,
         patch("clippercard.main.sys.stdout.isatty", return_value=False),
@@ -797,7 +797,7 @@ def test_summary_disables_table_color_when_piped():
 
 
 def test_summary_output_table_overrides_pipe_detection(capsys):
-    expected_cookie_path = Path("/tmp/auth.cookies")
+    expected_cookie_path = Path("auth.cookies")
 
     with (
         patch.object(
