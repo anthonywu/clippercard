@@ -188,15 +188,15 @@ class ClipperCardWebSession(httpx.Client):
             "-w",
         )
         if result.returncode != 0:
-            logger.debug(f"No saved cookies found in macOS Keychain for {self._keychain_account}")
+            logger.debug("No saved cookies found in macOS Keychain for %s", self._keychain_account)
             return False
         try:
             self._load_serialized_cookies(result.stdout)
         except (KeyError, TypeError, ValueError, json.JSONDecodeError):
-            logger.warning(f"Keychain cookies for {self._keychain_account} are unreadable; ignoring them")
+            logger.warning("Keychain cookies for %s are unreadable; ignoring them", self._keychain_account)
             return False
         loaded_cookies = list(self._cookie_jar)
-        logger.debug(f"Loaded {len(loaded_cookies)} cookies from macOS Keychain")
+        logger.debug("Loaded %d cookies from macOS Keychain", len(loaded_cookies))
         return bool(loaded_cookies)
 
     def _save_keychain_cookies(self):
@@ -212,7 +212,7 @@ class ClipperCardWebSession(httpx.Client):
         )
         if result.returncode != 0:
             raise ClipperCardError(f"Unable to save cookies to macOS Keychain: {result.stderr.strip()}")
-        logger.debug(f"Saved cookies to macOS Keychain for {self._keychain_account}")
+        logger.debug("Saved cookies to macOS Keychain for %s", self._keychain_account)
 
     def _clear_keychain_cookies(self):
         self._cookie_jar.clear()
@@ -224,7 +224,7 @@ class ClipperCardWebSession(httpx.Client):
             self._keychain_account,
         )
         if result.returncode == 0:
-            logger.debug(f"Removed stale cookies from macOS Keychain for {self._keychain_account}")
+            logger.debug("Removed stale cookies from macOS Keychain for %s", self._keychain_account)
 
     def _load_file_cookie_jar(self):
         if not self._cookie_jar_path.exists():
@@ -232,17 +232,17 @@ class ClipperCardWebSession(httpx.Client):
         try:
             self._cookie_jar.load(ignore_discard=True, ignore_expires=True)
         except LoadError:
-            logger.warning(f"Cookie jar at {self._cookie_jar_path} is unreadable; ignoring it")
+            logger.warning("Cookie jar at %s is unreadable; ignoring it", self._cookie_jar_path)
             return False
         loaded_cookies = list(self._cookie_jar)
-        logger.debug(f"Loaded {len(loaded_cookies)} cookies from {self._cookie_jar_path}")
+        logger.debug("Loaded %d cookies from %s", len(loaded_cookies), self._cookie_jar_path)
         return bool(loaded_cookies)
 
     def _migrate_file_cookies_to_keychain(self):
         if not self._load_file_cookie_jar():
             return False
         self._save_keychain_cookies()
-        logger.debug(f"Migrated file cookies from {self._cookie_jar_path} to macOS Keychain")
+        logger.debug("Migrated file cookies from %s to macOS Keychain", self._cookie_jar_path)
         return True
 
     def _load_cookie_jar(self):
@@ -259,7 +259,7 @@ class ClipperCardWebSession(httpx.Client):
         self._cookie_jar_path.parent.mkdir(parents=True, exist_ok=True)
         self._cookie_jar.save(ignore_discard=True, ignore_expires=True)
         self._cookie_jar_path.chmod(0o600)
-        logger.debug(f"Saved cookies to {self._cookie_jar_path}")
+        logger.debug("Saved cookies to %s", self._cookie_jar_path)
 
     def _clear_cookie_jar(self):
         if self._cookie_store == "keychain":
@@ -269,7 +269,7 @@ class ClipperCardWebSession(httpx.Client):
         self._cookie_jar.clear()
         if self._cookie_jar_path.exists():
             self._cookie_jar_path.unlink()
-            logger.debug(f"Removed stale cookie jar at {self._cookie_jar_path}")
+            logger.debug("Removed stale cookie jar at %s", self._cookie_jar_path)
 
     @staticmethod
     def _response_has_dashboard_data(response_text):
@@ -279,10 +279,10 @@ class ClipperCardWebSession(httpx.Client):
         if not self._load_cookie_jar():
             return None
 
-        logger.debug(f"Trying saved cookies from {self._cookie_jar_path}")
+        logger.debug("Trying saved cookies from %s", self._cookie_jar_path)
         dashboard_resp = self.get(self.DASHBOARD_URL)
-        logger.debug(f"Dashboard-with-cookies response: {dashboard_resp.status_code}")
-        logger.debug(f"Final URL after cookie reuse: {dashboard_resp.url}")
+        logger.debug("Dashboard-with-cookies response: %s", dashboard_resp.status_code)
+        logger.debug("Final URL after cookie reuse: %s", dashboard_resp.url)
 
         if not dashboard_resp.is_error and self._response_has_dashboard_data(dashboard_resp.text):
             self._dashboard_resp_text = dashboard_resp.text
@@ -304,30 +304,30 @@ class ClipperCardWebSession(httpx.Client):
         2. GET /web-login to get CSRF token
         3. POST to /dashboard with credentials + CSRF
         """
-        logger.debug(f"Logging in as {username}")
+        logger.debug("Logging in as %s", username)
 
         reused_resp = self._fetch_dashboard_with_cookies()
         if reused_resp is not None:
             return reused_resp
 
         # Get login page to extract CSRF token
-        logger.debug(f"Fetching login page: {self.LOGIN_URL}")
+        logger.debug("Fetching login page: %s", self.LOGIN_URL)
         login_landing_resp = self.get(self.LOGIN_URL)
         if login_landing_resp.is_error:
-            logger.error(f"Failed to get login page: {login_landing_resp.status_code}")
+            logger.error("Failed to get login page: %s", login_landing_resp.status_code)
             raise ClipperCardError(
                 "Unable to reach ClipperCard.com login page. "
                 "Please visit https://www.clippercard.com/ to ensure you can login."
             )
-        logger.debug(f"Login page fetched: {login_landing_resp.status_code}")
+        logger.debug("Login page fetched: %s", login_landing_resp.status_code)
 
         # Extract CSRF token from login page
         try:
             req_data = parser.parse_login_form_fields(login_landing_resp.text)
             csrf_token = req_data["_csrf"]
-            logger.debug(f"CSRF token extracted: {csrf_token}")
+            logger.debug("CSRF token extracted: %s", csrf_token)
         except (ValueError, AttributeError) as err:
-            logger.error(f"Failed to extract CSRF token: {err}")
+            logger.error("Failed to extract CSRF token: %s", err)
             raise ClipperCardError(f"Unable to extract CSRF token from login page: {err}") from err
 
         # Use the current form defaults from the login page, then override the
@@ -336,28 +336,28 @@ class ClipperCardWebSession(httpx.Client):
         req_data["password"] = password
         # Log without password for security
         log_data = {k: v if k != "password" else "***" for k, v in req_data.items()}
-        logger.debug(f"Posting to {self.DASHBOARD_URL} with data: {log_data}")
-        logger.debug(f"Full POST data keys: {list(req_data.keys())}")
-        logger.debug(f"CSRF token: {csrf_token[:20]}...")
+        logger.debug("Posting to %s with data: %s", self.DASHBOARD_URL, log_data)
+        logger.debug("Full POST data keys: %s", list(req_data.keys()))
+        logger.debug("CSRF token: %s...", csrf_token[:20])
 
         # Build curl-like command for debugging
         curl_data = "&".join([f"{k}={v}" if k != "password" else f"{k}=***" for k, v in req_data.items()])
-        logger.debug(f"Equivalent curl: curl -X POST {self.DASHBOARD_URL} -d '{curl_data}'")
+        logger.debug("Equivalent curl: curl -X POST %s -d '%s'", self.DASHBOARD_URL, curl_data)
 
         # Set Referer header for POST request
         post_headers = {"Referer": self.LOGIN_URL}
 
         dashboard_resp = self.post(self.DASHBOARD_URL, data=req_data, headers=post_headers)
-        logger.debug(f"Dashboard response: {dashboard_resp.status_code}")
-        logger.debug(f"Final URL after redirect: {dashboard_resp.url}")
+        logger.debug("Dashboard response: %s", dashboard_resp.status_code)
+        logger.debug("Final URL after redirect: %s", dashboard_resp.url)
 
         # Log response headers for debugging
-        logger.debug(f"Response headers: Content-Type={dashboard_resp.headers.get('Content-Type')}")
-        logger.debug(f"Response cookies: {dict(dashboard_resp.cookies)}")
+        logger.debug("Response headers: Content-Type=%s", dashboard_resp.headers.get("Content-Type"))
+        logger.debug("Response cookies: %s", dict(dashboard_resp.cookies))
 
         if dashboard_resp.is_error:
-            logger.error(f"Failed to post login: {dashboard_resp.status_code}")
-            logger.error(f"Response text (first 500 chars): {dashboard_resp.text[:500]}")
+            logger.error("Failed to post login: %s", dashboard_resp.status_code)
+            logger.error("Response text (first 500 chars): %s", dashboard_resp.text[:500])
             raise ClipperCardError(
                 "Unable to authenticate with ClipperCard.com. Please verify your credentials and try again."
             )
@@ -365,7 +365,7 @@ class ClipperCardWebSession(httpx.Client):
         parsed_cards = parser.parse_dashboard_cards(dashboard_resp.text)
         resp_soup = bs4.BeautifulSoup(dashboard_resp.text, "html.parser")
         if parsed_cards or "patronDetails" in dashboard_resp.text:
-            logger.debug(f"Login successful, dashboard page received with {len(parsed_cards)} parsed cards")
+            logger.debug("Login successful, dashboard page received with %d parsed cards", len(parsed_cards))
             self._dashboard_resp_text = dashboard_resp.text
             self._reused_cookies = False
             self._save_cookie_jar()
@@ -378,11 +378,11 @@ class ClipperCardWebSession(httpx.Client):
             possible_error_msg = resp_soup.find("div", attrs={"class": "form-error-message"})
             if possible_error_msg is not None:
                 error_text = parser.cleanup_whitespace(possible_error_msg.get_text())
-                logger.error(f"Auth error from server: {error_text}")
+                logger.error("Auth error from server: %s", error_text)
                 error_list = resp_soup.find("ul", id="defaultValidationErrorMessageList")
                 if error_list:
                     for li in error_list.find_all("li"):
-                        logger.debug(f"  - {li.get_text()}")
+                        logger.debug("  - %s", li.get_text())
                 raise ClipperCardAuthError(error_text)
             raise ClipperCardAuthError("Authentication failed - credentials were rejected")
 
@@ -400,10 +400,10 @@ class ClipperCardWebSession(httpx.Client):
         if self._profile_loaded:
             return self._profile_info
 
-        logger.debug(f"Fetching profile page: {self.PROFILE_URL}")
+        logger.debug("Fetching profile page: %s", self.PROFILE_URL)
         profile_resp = self.get(self.PROFILE_URL)
         if profile_resp.is_error:
-            logger.warning(f"Failed to fetch profile page: {profile_resp.status_code}")
+            logger.warning("Failed to fetch profile page: %s", profile_resp.status_code)
             self._profile_loaded = True
             self._profile_info = None
             return self._profile_info
@@ -411,7 +411,7 @@ class ClipperCardWebSession(httpx.Client):
         try:
             self._profile_info = parser.parse_profile_page(profile_resp.text)
         except ValueError as err:
-            logger.warning(f"Failed to parse profile page: {err}")
+            logger.warning("Failed to parse profile page: %s", err)
             self._profile_info = None
         else:
             self._save_cookie_jar()
@@ -428,13 +428,5 @@ class ClipperCardWebSession(httpx.Client):
             raise ClipperCardError("Must login first")
         logger.debug("Parsing cards from dashboard")
         cards = parser.parse_dashboard_cards(self._dashboard_resp_text)
-        logger.debug(f"Found {len(cards)} cards")
+        logger.debug("Found %d cards", len(cards))
         return cards
-
-    def print_summary(self):
-        """return a text summary of the account"""
-        print(self.profile_info)
-        print("=" * 80)
-        for card in sorted(self.cards, key=lambda card: card.serial_number):
-            print(card)
-            print("-" * 80)

@@ -19,23 +19,11 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import collections
-import itertools
 import json
 import logging
 import re
 from datetime import datetime
-
-try:
-    from warnings import deprecated
-except ImportError:  # Python < 3.13
-
-    def deprecated(message):
-        def decorator(func):
-            return func
-
-        return decorator
-
+from typing import NamedTuple
 
 import bs4
 
@@ -44,19 +32,17 @@ logger = logging.getLogger(__name__)
 
 # === Simple Objects for ClipperCard data ===
 
-_profile_fields = [
-    "name",
-    "email",
-    "mailing_address",
-    "phone",
-    "alt_phone",
-    "primary_payment",
-    "backup_payment",
-]
 
-
-class Profile(collections.namedtuple("Profile", _profile_fields)):
+class Profile(NamedTuple):
     """a simple class to represent a user profile"""
+
+    name: str
+    email: str
+    mailing_address: str
+    phone: str
+    alt_phone: str
+    primary_payment: str
+    backup_payment: str
 
     def __str__(self):
         return "\n".join(
@@ -72,35 +58,35 @@ class Profile(collections.namedtuple("Profile", _profile_fields)):
         ).format(**self._asdict())
 
 
-_product_fields = ["name", "value"]  # e.g. Cash value, BART HVD 60/64
-
-
-class CardFeature(collections.namedtuple("CardFeature", _product_fields)):
+class CardFeature(NamedTuple):
     """a simple class to represent a card feature e.g. reload plan"""
 
+    name: str
+    value: str
+
     def __str__(self):
         return "{name}: {value}".format(**self._asdict())
 
 
-class CardProduct(collections.namedtuple("CardProduct", _product_fields)):
+class CardProduct(NamedTuple):
     """a simple class to represent a card product e.g. cash value or pass"""
 
+    name: str
+    value: str
+
     def __str__(self):
         return "{name}: {value}".format(**self._asdict())
 
 
-_card_fields = [
-    "serial_number",
-    "nickname",
-    "type",  # Adult, Senior, Youth, Disabled Discount
-    "status",  # Active, Inactive
-    "features",  # a list of annotated properties of the card (e.g. auto-load)
-    "products",  # a list of CardProduct, e.g. Cash value, Train Pass
-]
-
-
-class Card(collections.namedtuple("Card", _card_fields)):
+class Card(NamedTuple):
     """a simple class to represent an instance of Clipper Card"""
+
+    serial_number: str
+    nickname: str
+    type: str | None  # Adult, Senior, Youth, Disabled Discount
+    status: str  # Active, Inactive
+    features: list[CardFeature]  # annotated properties of the card (e.g. auto-load)
+    products: list[CardProduct]  # e.g. Cash Value, Train Pass
 
     def __str__(self):
         lines = ['{serial_number} "{nickname}" ({type} - {status})'.format(**self._asdict())]
@@ -170,105 +156,6 @@ def parse_login_form_fields(login_page_content):
     return fields
 
 
-# Is this method still useful? Main client code now uses parse_dashboard_cards,
-# while this method is 5 years out of date per git blame.
-@deprecated("Only used in tests")
-def parse_cards(account_page_soup):
-    """Parse the list of Clipper Cards registered to the profile"""
-    card_info_divs = account_page_soup.find_all(
-        "div", attrs={"class": "clipper-card-info", "data-parent": "#clipper-cards"}
-    )
-    card_names = []
-    card_name_headers = account_page_soup.find_all("h2", attrs={"class": "clipper-card-name"})
-    for card_name_h2 in card_name_headers:
-        card_names.append(card_name_h2.find("span", attrs={"class": "sr-only"}).get_text())
-    cards = []
-    for i, info_div in enumerate(card_info_divs):
-        card_id = info_div.attrs["id"].replace("clipper-card-info-", "")
-        big_money_value = info_div.find(
-            "p",
-            attrs={
-                "class": "big-money",
-            },
-        )
-        products = [CardProduct(name="Cash Value", value=big_money_value.get_text().replace(" ", ""))]
-        features = []
-        feature_bullets = info_div.find("ul", attrs={"class": "bullets"})
-        if feature_bullets is not None:
-            for bullet_item in feature_bullets.find_all("li"):
-                features.append(CardFeature(name="Reload", value=bullet_item.get_text()))
-        current_passes_div = info_div.find("div", attrs={"class": "current-passes-section"})
-        card_type = None
-        card_status = None
-        all_pass_info = current_passes_div.find_all("p") or []
-        for pass_info in all_pass_info:
-            try:
-                if "Current Passes" in pass_info.get_text():
-                    products.append(
-                        CardProduct(
-                            name="Current Passes",
-                            value=cleanup_whitespace(pass_info.find_next_sibling().get_text()),
-                        )
-                    )
-                elif "Pending Passes" in pass_info.get_text():
-                    products.append(
-                        CardProduct(
-                            name="Pending Passes",
-                            value=cleanup_whitespace(pass_info.find_next_sibling().get_text()),
-                        )
-                    )
-                elif "Card Type" in pass_info.get_text():
-                    card_type = cleanup_whitespace(pass_info.find_all("span")[-1].get_text())
-                elif "Card Status" in pass_info.get_text():
-                    card_status = cleanup_whitespace(pass_info.find_all("span")[-1].get_text())
-            except Exception as err:  # noqa
-                logger.error("Parse error on pass_info: {%s}\n{%s}", err, pass_info)
-
-        cards.append(
-            Card(
-                serial_number=card_id,
-                nickname=card_names[i],
-                type=card_type,
-                status=card_status,
-                features=features,
-                products=products,
-            )
-        )
-    return cards
-
-
-def parse_profile_info(account_soup):
-    """Parse the attributes of the logged in user"""
-    profile_info_div = account_soup.find("div", attrs={"id": "profile-info"})
-    expected_data_items = [
-        "name",
-        "email",
-        "_",  # ignore, email_updates_enabled
-        "mailing_address",
-        "_",  # ignore, primary_phone_label
-        "phone",
-        "_",  # ignore, alt_phone_label
-        "alt_phone",
-    ]
-    profile_data_spans = profile_info_div.find_all("span")
-    profile_info = {}
-    for data_item, data_span in itertools.zip_longest(expected_data_items, profile_data_spans):
-        if data_item != "mailing_address":
-            profile_info[data_item] = cleanup_whitespace(data_span.get_text())
-        else:
-            profile_info[data_item] = cleanup_whitespace(
-                data_span.find_parent().get_text().replace("Mailing Address", "")
-            )
-    profile_info.pop("_")
-    profile_info["primary_payment"] = (
-        account_soup.find("div", attrs={"id": "payment-info"}).find_all("span")[-1].get_text()
-    )
-    profile_info["backup_payment"] = (
-        account_soup.find("div", attrs={"id": "backup-payment-info"}).find_all("span")[-1].get_text()
-    )
-    return Profile(**profile_info)
-
-
 def parse_profile_page(profile_html_content):
     """Parse the modern /profile page."""
     soup = bs4.BeautifulSoup(profile_html_content, "html.parser")
@@ -336,7 +223,7 @@ def parse_dashboard_cards(dashboard_html_content):
                     patron_details = _parse_js_object(json_str)
                     break
                 except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to parse patron details JSON: {e}")
+                    logger.warning("Failed to parse patron details JSON: %s", e)
                     continue
 
     if not patron_details:
@@ -369,14 +256,16 @@ def parse_dashboard_cards(dashboard_html_content):
             if balance is not None:
                 products.append(CardProduct(name="BART", value=_cents_to_dollars(balance)))
 
-        passList = account.get("passList", [])
-        for pass_info in passList:
+        pass_list = account.get("passList", [])
+        for pass_info in pass_list:
             logger.debug("Parsing pass info: %s", pass_info.keys())
             pass_name = pass_info.get("passDescription", "Unknown Pass")
             # NB: expirationDateTime is likely card validity, not pass expiration
             # empirically it is ~100 years after pass activation
-            expiration = datetime.fromisoformat(pass_info.get("endDateTime", "Unknown Expiration")).date()
-            products.append(CardProduct(name="Pass", value=f"{pass_name}\n  - Expires {expiration}"))
+            end_date_time = pass_info.get("endDateTime")
+            expiration = datetime.fromisoformat(end_date_time).date() if end_date_time else None
+            value = f"{pass_name}\n  - Expires {expiration}" if expiration else pass_name
+            products.append(CardProduct(name="Pass", value=value))
 
         # Card features (currently empty, can extend later)
         features = []
