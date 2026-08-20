@@ -847,7 +847,7 @@ def test_test_cli_exposes_fixture_subcommands():
 def test_test_cli_parse_dashboard_uses_dashboard_parser():
     with (
         patch.object(sys, "argv", ["clippercard-test", "parse-dashboard", "dashboard.html"]),
-        patch("clippercard.test_cli.open", create=True) as open_mock,
+        patch("clippercard.test_cli.Path.read_text", return_value="<html></html>"),
         patch(
             "clippercard.test_cli.clippercard.parser.parse_dashboard_cards",
             return_value=["card"],
@@ -858,7 +858,6 @@ def test_test_cli_parse_dashboard_uses_dashboard_parser():
         ) as output_mock,
         patch("clippercard.test_cli.print") as print_mock,
     ):
-        open_mock.return_value.__enter__.return_value.read.return_value = "<html></html>"
         test_cli.main()
 
     parse_mock.assert_called_once_with("<html></html>")
@@ -869,7 +868,7 @@ def test_test_cli_parse_dashboard_uses_dashboard_parser():
 def test_test_cli_parse_profile_uses_profile_parser():
     with (
         patch.object(sys, "argv", ["clippercard-test", "parse-profile", "profile.html"]),
-        patch("clippercard.test_cli.open", create=True) as open_mock,
+        patch("clippercard.test_cli.Path.read_text", return_value="<html></html>"),
         patch(
             "clippercard.test_cli.clippercard.parser.parse_profile_page",
             return_value={"name": "Profile"},
@@ -880,7 +879,6 @@ def test_test_cli_parse_profile_uses_profile_parser():
         ) as output_mock,
         patch("clippercard.test_cli.print") as print_mock,
     ):
-        open_mock.return_value.__enter__.return_value.read.return_value = "<html></html>"
         test_cli.main()
 
     parse_mock.assert_called_once_with("<html></html>")

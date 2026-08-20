@@ -37,7 +37,7 @@ password = <replace_with_your_password>
 # cookie_store = keychain
 """
     fd = os.open(config_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w") as handle:
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
         handle.write(template)
     os.chmod(config_path, 0o600)
     print(f"Created config file: {config_path}")
@@ -103,7 +103,7 @@ def _read_password(username):
 def _read_config(config_file_path):
     """Load credentials.ini without interpolating % in passwords."""
     parser = configparser.ConfigParser(interpolation=None)
-    parser.read(config_file_path)
+    parser.read(config_file_path, encoding="utf-8")
     return parser
 
 
