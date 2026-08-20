@@ -13,6 +13,18 @@ import clippercard.test_cli as test_cli
 from clippercard.client import ClipperCardAuthError, ClipperCardError
 
 
+class DummySession:
+    def __init__(self, cookie_jar_path=None, reused_cookies=False):
+        self.reused_cookies = reused_cookies
+        self.cookie_jar_path = cookie_jar_path or Path("/tmp/auth.cookies")
+        self.profile_info = None
+        self.cards = []
+        self.closed = False
+
+    def close(self):
+        self.closed = True
+
+
 @pytest.fixture
 def restore_httpx_logger_level():
     logger = logging.getLogger("httpx")
@@ -393,12 +405,6 @@ credential_store = vault
 def test_summary_uses_account_specific_cookie_jar_path():
     expected_cookie_path = Path("/tmp/auth.other.cookies")
 
-    class DummySession:
-        reused_cookies = False
-        cookie_jar_path = expected_cookie_path
-        profile_info = None
-        cards = []
-
     with (
         patch.object(
             sys,
@@ -425,14 +431,29 @@ def test_summary_uses_account_specific_cookie_jar_path():
     print_mock.assert_called_once_with("summary output")
 
 
+def test_summary_closes_session():
+    session = DummySession()
+
+    with (
+        patch.object(
+            sys,
+            "argv",
+            ["clippercard", "summary", "--credential-store", "config", "--cookie-store", "file"],
+        ),
+        patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=session.cookie_jar_path),
+        patch("clippercard.main.clippercard.Session", return_value=session),
+        patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
+        patch("clippercard.main.sys.stdout.isatty", return_value=True),
+        patch("clippercard.main.print"),
+    ):
+        main.main()
+
+    assert session.closed is True
+
+
 def test_summary_can_use_keychain_cookie_store():
     expected_cookie_path = Path("/tmp/auth.other.cookies")
-
-    class DummySession:
-        reused_cookies = False
-        cookie_jar_path = expected_cookie_path
-        profile_info = None
-        cards = []
 
     with (
         patch.object(
@@ -469,13 +490,6 @@ def test_summary_can_use_keychain_cookie_store():
 
 def test_summary_saves_credentials_to_keychain_after_login(capsys):
     expected_cookie_path = Path("/tmp/auth.cookies")
-
-    class DummySession:
-        reused_cookies = False
-        cookie_jar_path = expected_cookie_path
-        profile_info = None
-        cards = []
-
     saved = {}
 
     def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
@@ -532,13 +546,6 @@ def test_summary_saves_credentials_to_keychain_after_login(capsys):
 
 def test_summary_does_not_resave_credentials_loaded_from_keychain():
     expected_cookie_path = Path("/tmp/auth.cookies")
-
-    class DummySession:
-        reused_cookies = False
-        cookie_jar_path = expected_cookie_path
-        profile_info = None
-        cards = []
-
     commands_seen = []
 
     def fake_run(command, check=False, capture_output=False, text=False):
@@ -582,13 +589,6 @@ def test_summary_does_not_resave_credentials_loaded_from_keychain():
 
 def test_summary_does_not_save_credentials_when_session_reuses_cookies():
     expected_cookie_path = Path("/tmp/auth.cookies")
-
-    class DummySession:
-        reused_cookies = True
-        cookie_jar_path = expected_cookie_path
-        profile_info = None
-        cards = []
-
     commands_seen = []
 
     def fake_run(command, check=False, capture_output=False, text=False, **kwargs):
@@ -619,7 +619,10 @@ def test_summary_does_not_save_credentials_when_session_reuses_cookies():
         patch("clippercard.client.subprocess.run", new=fake_run),
         patch("clippercard.client.sys.platform", "darwin"),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
-        patch("clippercard.main.clippercard.Session", return_value=DummySession()),
+        patch(
+            "clippercard.main.clippercard.Session",
+            return_value=DummySession(cookie_jar_path=expected_cookie_path, reused_cookies=True),
+        ),
         patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
         patch("clippercard.main.sys.stdout.isatty", return_value=True),
         patch("clippercard.main.print"),
@@ -675,12 +678,6 @@ def test_summary_does_not_save_credentials_when_login_fails():
 def test_summary_can_output_json_without_cookie_message_on_stdout(capsys):
     expected_cookie_path = Path("/tmp/auth.cookies")
 
-    class DummySession:
-        reused_cookies = True
-        cookie_jar_path = expected_cookie_path
-        profile_info = None
-        cards = []
-
     with (
         patch.object(
             sys,
@@ -689,7 +686,10 @@ def test_summary_can_output_json_without_cookie_message_on_stdout(capsys):
         ),
         patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
-        patch("clippercard.main.clippercard.Session", return_value=DummySession()),
+        patch(
+            "clippercard.main.clippercard.Session",
+            return_value=DummySession(cookie_jar_path=expected_cookie_path, reused_cookies=True),
+        ),
         patch("clippercard.main.clippercard.porcelain.summary_json_output", return_value='{"cards": []}'),
     ):
         main.main()
@@ -702,12 +702,6 @@ def test_summary_can_output_json_without_cookie_message_on_stdout(capsys):
 def test_summary_defaults_to_json_when_stdout_is_piped(capsys):
     expected_cookie_path = Path("/tmp/auth.cookies")
 
-    class DummySession:
-        reused_cookies = True
-        cookie_jar_path = expected_cookie_path
-        profile_info = None
-        cards = []
-
     with (
         patch.object(
             sys,
@@ -716,7 +710,10 @@ def test_summary_defaults_to_json_when_stdout_is_piped(capsys):
         ),
         patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
-        patch("clippercard.main.clippercard.Session", return_value=DummySession()),
+        patch(
+            "clippercard.main.clippercard.Session",
+            return_value=DummySession(cookie_jar_path=expected_cookie_path, reused_cookies=True),
+        ),
         patch("clippercard.main.clippercard.porcelain.summary_json_output", return_value='{"cards": []}'),
         patch("clippercard.main.sys.stdout.isatty", return_value=False),
     ):
@@ -728,12 +725,6 @@ def test_summary_defaults_to_json_when_stdout_is_piped(capsys):
 
 
 def test_summary_enables_table_color_on_tty():
-    class DummySession:
-        reused_cookies = False
-        cookie_jar_path = Path("/tmp/auth.cookies")
-        profile_info = None
-        cards = []
-
     with (
         patch.object(
             sys,
@@ -753,12 +744,6 @@ def test_summary_enables_table_color_on_tty():
 
 
 def test_summary_disables_table_color_when_piped():
-    class DummySession:
-        reused_cookies = False
-        cookie_jar_path = Path("/tmp/auth.cookies")
-        profile_info = None
-        cards = []
-
     with (
         patch.object(
             sys,
@@ -780,12 +765,6 @@ def test_summary_disables_table_color_when_piped():
 def test_summary_output_table_overrides_pipe_detection(capsys):
     expected_cookie_path = Path("/tmp/auth.cookies")
 
-    class DummySession:
-        reused_cookies = True
-        cookie_jar_path = expected_cookie_path
-        profile_info = None
-        cards = []
-
     with (
         patch.object(
             sys,
@@ -794,7 +773,10 @@ def test_summary_output_table_overrides_pipe_detection(capsys):
         ),
         patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
-        patch("clippercard.main.clippercard.Session", return_value=DummySession()),
+        patch(
+            "clippercard.main.clippercard.Session",
+            return_value=DummySession(cookie_jar_path=expected_cookie_path, reused_cookies=True),
+        ),
         patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
         patch("clippercard.main.sys.stdout.isatty", return_value=False),
     ):

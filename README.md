@@ -52,10 +52,10 @@ Usage
 ```python
 import clippercard
 
-session = clippercard.Session("username", "password")
-print(session.profile_info)
-for c in session.cards:
-    print(c)
+with clippercard.Session("username", "password") as session:
+    print(session.profile_info)
+    for c in session.cards:
+        print(c)
 ```
 
 You also get a super convenient command line binary ``clippercard``::

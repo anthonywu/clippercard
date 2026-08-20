@@ -364,36 +364,40 @@ def main():
             cookie_store=cookie_store,
             keychain_account=args.account,
         )
-        saved_keychain_credentials = False
-        if credential_store == "keychain" and credential_source != "keychain" and not session.reused_cookies:
-            _save_keychain_auth(args.account, username, password)
-            saved_keychain_credentials = True
-        if args.command == "summary":
-            output = args.output or ("table" if sys.stdout.isatty() else "json")
-            if saved_keychain_credentials:
-                _print_status(
-                    "Saved login credentials to macOS Keychain. "
-                    "You can delete the plaintext username/password from the config file if you no longer need them.",
-                    output,
-                )
-            if session.reused_cookies:
-                cookie_storage_label = getattr(session, "cookie_storage_label", session.cookie_jar_path)
-                _print_status(f"Reusing saved cookies from {cookie_storage_label}", output)
-            if output == "json":
-                print(
-                    clippercard.porcelain.summary_json_output(
-                        session.profile_info, session.cards, show_private=args.show_private
+        try:
+            saved_keychain_credentials = False
+            if credential_store == "keychain" and credential_source != "keychain" and not session.reused_cookies:
+                _save_keychain_auth(args.account, username, password)
+                saved_keychain_credentials = True
+            if args.command == "summary":
+                output = args.output or ("table" if sys.stdout.isatty() else "json")
+                if saved_keychain_credentials:
+                    _print_status(
+                        "Saved login credentials to macOS Keychain. "
+                        "You can delete the plaintext username/password from the config file "
+                        "if you no longer need them.",
+                        output,
                     )
-                )
-            else:
-                print(
-                    clippercard.porcelain.tabular_output(
-                        session.profile_info,
-                        session.cards,
-                        show_private=args.show_private,
-                        color=sys.stdout.isatty(),
+                if session.reused_cookies:
+                    cookie_storage_label = getattr(session, "cookie_storage_label", session.cookie_jar_path)
+                    _print_status(f"Reusing saved cookies from {cookie_storage_label}", output)
+                if output == "json":
+                    print(
+                        clippercard.porcelain.summary_json_output(
+                            session.profile_info, session.cards, show_private=args.show_private
+                        )
                     )
-                )
+                else:
+                    print(
+                        clippercard.porcelain.tabular_output(
+                            session.profile_info,
+                            session.cards,
+                            show_private=args.show_private,
+                            color=sys.stdout.isatty(),
+                        )
+                    )
+        finally:
+            session.close()
     except (clippercard.client.ClipperCardError, ClipperCardCommandError, FileNotFoundError) as e:
         sys.exit(str(e))
 

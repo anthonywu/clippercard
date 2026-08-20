@@ -96,7 +96,7 @@ class ClipperCardWebSession(httpx.Client):
     def __init__(self, username=None, password=None, cookie_jar_path=None, cookie_store="file", keychain_account=None):
         # Follow redirects and bound every request: callers expect final-page
         # responses, and hanging forever is worse than a generous timeout.
-        httpx.Client.__init__(self, follow_redirects=True, timeout=30.0)
+        super().__init__(follow_redirects=True, timeout=30.0)
         self.headers.update(self.HEADERS)
         self._cookie_jar_path = Path(cookie_jar_path).expanduser() if cookie_jar_path else self.COOKIE_JAR_PATH
         self._cookie_store = cookie_store
@@ -109,8 +109,12 @@ class ClipperCardWebSession(httpx.Client):
         self._profile_info = None
         self._profile_loaded = False
         self._reused_cookies = False
-        if username and password:
-            self.login(username, password)
+        try:
+            if username and password:
+                self.login(username, password)
+        except BaseException:
+            self.close()
+            raise
 
     @property
     def reused_cookies(self):

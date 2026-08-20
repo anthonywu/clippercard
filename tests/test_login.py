@@ -275,6 +275,19 @@ def test_keychain_cookie_store_requires_macos():
     assert str(exc.value) == "macOS Keychain storage is only supported on macOS"
 
 
+def test_constructor_closes_client_when_login_fails(tmp_path):
+    cookie_jar_path = tmp_path / "clippercard.cookies"
+
+    with (
+        patch.object(ClipperCardWebSession, "login", side_effect=ClipperCardError("nope")),
+        patch.object(ClipperCardWebSession, "close") as close_mock,
+        pytest.raises(ClipperCardError, match="nope"),
+    ):
+        ClipperCardWebSession("person@example.com", "supersecret", cookie_jar_path=cookie_jar_path)
+
+    close_mock.assert_called_once()
+
+
 def test_profile_info_fetches_and_parses_profile_page(tmp_path):
     login_html = (Path(__file__).parent / "data" / "login.html").read_text()
     dashboard_html = (Path(__file__).parent / "data" / "dashboard.html").read_text()
