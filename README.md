@@ -63,28 +63,25 @@ You also get a super convenient command line binary ``clippercard``::
 ```sh
 $ clippercard -h # see usage information
 $ clippercard summary
-+------------------------------------------------------+
-|            name | Golden Gate Rider                  |
-|           email | goldengate-rider@example.com       |
-| mailing_address | 1 Main St, San Francisco, CA 94105 |
-|           phone | 415-555-5555                       |
-|       alt_phone | 650-555-5555                       |
-| primary_payment | Mastercard ending in 1234          |
-|  backup_payment | Amex ending in 9876                |
-+------------------------------------------------------+
-+---------------------------------------------------------------------------------------+
-| # | Name                      | Serial     | Type  | Status | Products                |
-|---+---------------------------+------------+-------+--------+-------------------------|
-| 1 | Primary, card #2021234134 | 2021234134 | ADULT | Active | Cash Value: $195.00     |
-|   |                           |            |       |        | Current Passes: None    |
-|   |                           |            |       |        | Pending Passes: None    |
-|   |                           |            |       |        | Reload: $255 - Autoload |
-| 2 | Backup, card #2021234156  | 2021234156 | ADULT | Active | Cash Value: $200.00     |
-|   |                           |            |       |        | Current Passes: None    |
-|   |                           |            |       |        | Pending Passes: None    |
-|   |                           |            |       |        | Reload: $200 - Autoload |
-+---------------------------------------------------------------------------------------+
++---------------------------------------------+
+|            name | Go*** Ga*** Ri***         |
+|           email | g***@example.com          |
+| mailing_address | ***                       |
+|           phone | 415-***-***-5555          |
+|       alt_phone | 650-***-***-5555          |
+| primary_payment | Mastercard ending in 1234 |
+|  backup_payment | Amex ending in 9876       |
++---------------------------------------------+
++----------------------------------------------------------------+
+| # | Name    | Serial     | Type  | Status | Cash Value | BART  |
+|---+---------+------------+-------+--------+------------+-------|
+| 1 | Primary | ******4134 | Adult | Active |     $40.00 |       |
+| 2 | Phone   | ******4156 | Adult | Active |    $244.55 | $1.10 |
+| 3 | Watch   | ******4178 | Adult | Active |    $165.40 | $1.40 |
++----------------------------------------------------------------+
 ```
+
+Name, email, address, phone, and card serials are redacted by default. Each stored-value purse (Cash Value, BART, or another agency) gets its own column. Pass `--show-private` to print unredacted details.
 
 If you wish to use clippercard without specifying username/password on the CLI, create a file ``~/.config/clippercard/credentials.ini`` with this format::
 
@@ -200,26 +197,30 @@ $ clippercard summary --output json
 {
   "profile": {
     "name": "Go*** Ga*** Ri***",
-    "email": "g***@example.com"
+    "email": "g***@example.com",
+    "mailing_address": "***",
+    "phone": "415-***-***-5555",
+    "alt_phone": "650-***-***-5555",
+    "primary_payment": "Mastercard ending in 1234",
+    "backup_payment": "Amex ending in 9876"
   },
   "cards": [
     {
-      "serial_number": "******4134",
-      "nickname": "Primary, card ending in 4134",
-      "type": "ADULT",
+      "serial_number": "******4156",
+      "nickname": "Phone",
+      "type": "Adult",
       "status": "Active",
       "products": [
         {
           "name": "Cash Value",
-          "value": "$195.00"
+          "value": "$244.55"
+        },
+        {
+          "name": "BART",
+          "value": "$1.10"
         }
       ],
-      "features": [
-        {
-          "name": "Reload",
-          "value": "$255 - Autoload"
-        }
-      ]
+      "features": []
     }
   ]
 }
@@ -250,7 +251,7 @@ If you'd like to contribute one:
 1. Log in at https://www.clippercard.com and open the dashboard.
 2. View the page source (paste `view-source:https://www.clippercard.com/dashboard` into your browser's address bar) and save the full page.
 3. Redact personal details: name, email, mailing address, phone numbers, and all but the last 4 digits of card serial numbers.
-4. Open a GitHub issue describing what your account has (passes, autoload, BART purse, virtual/phone cards, etc.) — without attaching the file — and the maintainer will arrange a private handoff.
+4. Open a GitHub issue describing what your account has (passes, autoload, BART or other agency purses, virtual/phone cards, etc.) — without attaching the file — and the maintainer will arrange a private handoff.
 
 Please don't paste page source into a public issue or pull request. Even redacted, treat it like a bank statement.
 

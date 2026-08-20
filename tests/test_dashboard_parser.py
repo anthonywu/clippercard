@@ -89,6 +89,61 @@ class TestDashboardCardParsing:
         assert result[0].type == "Adult"
         assert result[1].type == "Adult"
 
+    def test_products_from_purses_includes_other_agencies(self):
+        account = {
+            "purseList": [
+                {
+                    "balance": 4000,
+                    "purseRestriction": "Unrestricted",
+                    "purseName": "Unrestricted",
+                },
+                {
+                    "balance": 110,
+                    "purseRestriction": "OperatorRestricted",
+                    "description": "BART",
+                    "purseName": "BART HVD Purse",
+                },
+                {
+                    "balance": 525,
+                    "purseRestriction": "OperatorRestricted",
+                    "description": "Muni",
+                    "purseName": "Muni HVD Purse",
+                },
+            ]
+        }
+
+        products = parser._products_from_purses(account)
+
+        assert [(product.name, product.value) for product in products] == [
+            ("Cash Value", "$40.00"),
+            ("BART", "$1.10"),
+            ("Muni", "$5.25"),
+        ]
+
+    def test_products_from_purses_falls_back_to_convenience_fields(self):
+        account = {
+            "cashPurse": {"balance": 19500},
+            "bartPurse": {"balance": 110},
+        }
+
+        products = parser._products_from_purses(account)
+
+        assert [(product.name, product.value) for product in products] == [
+            ("Cash Value", "$195.00"),
+            ("BART", "$1.10"),
+        ]
+
+    def test_purse_display_name_strips_hvd_suffix_without_description(self):
+        assert (
+            parser._purse_display_name(
+                {
+                    "purseRestriction": "OperatorRestricted",
+                    "purseName": "Caltrain HVD Purse",
+                }
+            )
+            == "Caltrain"
+        )
+
     def test_all_required_fields(self, dashboard_html):
         """Verify all Card fields are populated"""
         result = parser.parse_dashboard_cards(dashboard_html)
