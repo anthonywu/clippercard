@@ -7,7 +7,6 @@ import configparser
 import getpass
 import json
 import logging
-import os
 import re
 import sys
 from pathlib import Path
@@ -26,7 +25,8 @@ _CREDENTIAL_STORE_SERVICE = "clippercard.credentials"
 
 def _init_config_file(config_file_path):
     """Initialize a config file with template structure."""
-    os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
+    config_path = Path(config_file_path).expanduser()
+    config_path.parent.mkdir(parents=True, exist_ok=True)
     template = """\
 [default]
 username = <replace_with_your_email>
@@ -35,9 +35,8 @@ password = <replace_with_your_password>
 # credential_store = keychain
 # cookie_store = keychain
 """
-    with open(config_file_path, "w") as f:
-        f.write(template)
-    print(f"Created config file: {config_file_path}")
+    config_path.write_text(template)
+    print(f"Created config file: {config_path}")
 
 
 def _load_keychain_auth(account):
@@ -110,8 +109,8 @@ def _get_config_or_arg_auth(args):
             args.password = password
         return username, password
 
-    config_file_path = os.path.expanduser(args.config)
-    if not os.path.exists(config_file_path):
+    config_file_path = Path(args.config).expanduser()
+    if not config_file_path.exists():
         response = input(f"Config file {config_file_path} does not exist. Create it? (y/n): ").strip().lower()
         if response == "y":
             _init_config_file(config_file_path)
@@ -139,8 +138,8 @@ def _config_auth_available(args):
     if args.username:
         return True
 
-    config_file_path = os.path.expanduser(args.config)
-    if not os.path.exists(config_file_path):
+    config_file_path = Path(args.config).expanduser()
+    if not config_file_path.exists():
         return False
 
     parser = configparser.ConfigParser()
@@ -178,14 +177,16 @@ def _get_client_auth_with_source(args):
 
 
 def _get_client_auth(args):
-    credentials, source = _get_client_auth_with_source(args)
-    args._credential_source = source
-    return credentials
+    """Resolve (username, password) plus where they came from ("config" or "keychain")."""
+    return _get_client_auth_with_source(args)
 
 
 def _config_option(args, option):
-    config_file_path = os.path.expanduser(getattr(args, "config", "") or "")
-    if not config_file_path or not os.path.exists(config_file_path):
+    config_arg = getattr(args, "config", "") or ""
+    if not config_arg:
+        return None
+    config_file_path = Path(config_arg).expanduser()
+    if not config_file_path.exists():
         return None
 
     parser = configparser.ConfigParser()
@@ -203,7 +204,7 @@ def _resolve_credential_store(args):
     if configured is not None:
         if configured not in {"config", "keychain"}:
             raise ClipperCardCommandError(
-                f"Invalid credential_store {configured!r} in {os.path.expanduser(args.config)}; "
+                f"Invalid credential_store {configured!r} in {Path(args.config).expanduser()}; "
                 "expected 'config' or 'keychain'"
             )
         return configured
@@ -244,7 +245,7 @@ def _resolve_cookie_store(args, cookie_jar_path=None):
     if configured is not None:
         if configured not in {"file", "keychain"}:
             raise ClipperCardCommandError(
-                f"Invalid cookie_store {configured!r} in {os.path.expanduser(args.config)}; "
+                f"Invalid cookie_store {configured!r} in {Path(args.config).expanduser()}; "
                 "expected 'file' or 'keychain'"
             )
         return configured
@@ -347,7 +348,7 @@ def main():
         cookie_store = _resolve_cookie_store(args, cookie_jar_path=cookie_jar_path)
         args.credential_store = credential_store
         args.cookie_store = cookie_store
-        username, password = _get_client_auth(args)
+        (username, password), credential_source = _get_client_auth(args)
         session = clippercard.Session(
             username,
             password,
@@ -356,11 +357,7 @@ def main():
             keychain_account=args.account,
         )
         saved_keychain_credentials = False
-        if (
-            credential_store == "keychain"
-            and getattr(args, "_credential_source", "config") != "keychain"
-            and not session.reused_cookies
-        ):
+        if credential_store == "keychain" and credential_source != "keychain" and not session.reused_cookies:
             _save_keychain_auth(args.account, username, password)
             saved_keychain_credentials = True
         if args.command == "summary":

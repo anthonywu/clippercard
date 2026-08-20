@@ -54,7 +54,9 @@ target-version = "py311"
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "G"]
 
 [tool.uv.build-backend]
 module-root = ""
+# Dev-only fixture parsing helper (just test-cli); not part of the installed CLI
+wheel-exclude = ["clippercard/test_cli.py"]

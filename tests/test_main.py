@@ -91,7 +91,7 @@ def test_get_client_auth_loads_credentials_from_keychain():
         patch("clippercard.client.sys.platform", "darwin"),
         patch("clippercard.client.subprocess.run", new=fake_run),
     ):
-        assert main._get_client_auth(args) == ("person@example.com", "supersecret")
+        assert main._get_client_auth(args) == (("person@example.com", "supersecret"), "keychain")
 
 
 def test_get_client_auth_uses_explicit_credentials_before_keychain():
@@ -104,10 +104,9 @@ def test_get_client_auth_uses_explicit_credentials_before_keychain():
     )
 
     with patch("clippercard.main._load_keychain_auth") as load_keychain_auth:
-        assert main._get_client_auth(args) == ("fresh@example.com", "freshsecret")
+        assert main._get_client_auth(args) == (("fresh@example.com", "freshsecret"), "config")
 
     load_keychain_auth.assert_not_called()
-    assert args._credential_source == "config"
 
 
 def test_get_client_auth_prompts_for_password_when_username_is_set():
@@ -123,12 +122,11 @@ def test_get_client_auth_prompts_for_password_when_username_is_set():
         patch("clippercard.main._load_keychain_auth") as load_keychain_auth,
         patch("clippercard.main._read_password", return_value="pasted-secret") as read_password,
     ):
-        assert main._get_client_auth(args) == ("fresh@example.com", "pasted-secret")
+        assert main._get_client_auth(args) == (("fresh@example.com", "pasted-secret"), "config")
 
     read_password.assert_called_once_with("fresh@example.com")
     load_keychain_auth.assert_not_called()
     assert args.password == "pasted-secret"
-    assert args._credential_source == "config"
 
 
 def test_resolve_credential_store_treats_username_as_config_auth():
@@ -211,7 +209,7 @@ password = supersecret
         patch("clippercard.client.sys.platform", "darwin"),
         patch("clippercard.client.subprocess.run", new=fake_run),
     ):
-        assert main._get_client_auth(args) == ("person@example.com", "supersecret")
+        assert main._get_client_auth(args) == (("person@example.com", "supersecret"), "config")
 
     assert commands_seen == ["find-generic-password"]
 
@@ -247,7 +245,7 @@ def test_get_client_auth_uses_keychain_when_config_auth_is_missing():
         patch("clippercard.main._config_auth_available", return_value=False),
         patch("clippercard.main._load_keychain_auth", return_value=("person@example.com", "supersecret")),
     ):
-        assert main._get_client_auth(args) == ("person@example.com", "supersecret")
+        assert main._get_client_auth(args) == (("person@example.com", "supersecret"), "keychain")
 
 
 def test_resolve_credential_store_falls_back_to_keychain_when_config_auth_is_missing():
@@ -377,7 +375,7 @@ def test_summary_uses_account_specific_cookie_jar_path():
             "argv",
             ["clippercard", "summary", "--account", "other", "--credential-store", "config", "--cookie-store", "file"],
         ),
-        patch("clippercard.main._get_client_auth", return_value=("person@example.com", "supersecret")),
+        patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path) as cookie_path_mock,
         patch("clippercard.main.clippercard.Session", return_value=DummySession()) as session_mock,
         patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
@@ -421,7 +419,7 @@ def test_summary_can_use_keychain_cookie_store():
                 "keychain",
             ],
         ),
-        patch("clippercard.main._get_client_auth", return_value=("person@example.com", "supersecret")),
+        patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()) as session_mock,
         patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
@@ -659,7 +657,7 @@ def test_summary_can_output_json_without_cookie_message_on_stdout(capsys):
             "argv",
             ["clippercard", "summary", "--output", "json", "--credential-store", "config", "--cookie-store", "file"],
         ),
-        patch("clippercard.main._get_client_auth", return_value=("person@example.com", "supersecret")),
+        patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),
         patch("clippercard.main.clippercard.porcelain.summary_json_output", return_value='{"cards": []}'),
@@ -686,7 +684,7 @@ def test_summary_defaults_to_json_when_stdout_is_piped(capsys):
             "argv",
             ["clippercard", "summary", "--credential-store", "config", "--cookie-store", "file"],
         ),
-        patch("clippercard.main._get_client_auth", return_value=("person@example.com", "supersecret")),
+        patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),
         patch("clippercard.main.clippercard.porcelain.summary_json_output", return_value='{"cards": []}'),
@@ -714,7 +712,7 @@ def test_summary_output_table_overrides_pipe_detection(capsys):
             "argv",
             ["clippercard", "summary", "--output", "table", "--credential-store", "config", "--cookie-store", "file"],
         ),
-        patch("clippercard.main._get_client_auth", return_value=("person@example.com", "supersecret")),
+        patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
         patch("clippercard.main._cookie_jar_path_for_account", return_value=expected_cookie_path),
         patch("clippercard.main.clippercard.Session", return_value=DummySession()),
         patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output"),
