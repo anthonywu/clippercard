@@ -79,7 +79,7 @@ def test_get_client_auth_loads_credentials_from_keychain():
         password=None,
     )
 
-    def fake_run(command, check=False, capture_output=False, text=False):
+    def fake_run(command, check=False, capture_output=False, text=False, timeout=None):
         assert command == [
             "security",
             "find-generic-password",
@@ -92,6 +92,7 @@ def test_get_client_auth_loads_credentials_from_keychain():
         assert check is False
         assert capture_output is True
         assert text is True
+        assert timeout == 30
         return CompletedProcess(
             command,
             0,
@@ -269,7 +270,7 @@ password = supersecret
     )
     commands_seen = []
 
-    def fake_run(command, check=False, capture_output=False, text=False):
+    def fake_run(command, check=False, capture_output=False, text=False, timeout=None):
         assert check is False
         assert capture_output is True
         assert text is True
@@ -579,7 +580,7 @@ def test_summary_does_not_resave_credentials_loaded_from_keychain():
     expected_cookie_path = Path("/tmp/auth.cookies")
     commands_seen = []
 
-    def fake_run(command, check=False, capture_output=False, text=False):
+    def fake_run(command, check=False, capture_output=False, text=False, timeout=None):
         commands_seen.append(command[1])
         if command[1] == "find-generic-password":
             return CompletedProcess(

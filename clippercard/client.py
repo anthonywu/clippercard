@@ -58,6 +58,7 @@ def run_keychain(*args):
         check=False,
         capture_output=True,
         text=True,
+        timeout=30,
     )
 
 
