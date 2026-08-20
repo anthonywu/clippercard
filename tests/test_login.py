@@ -91,6 +91,7 @@ def test_login_accepts_dashboard_response_with_generic_form_errors(tmp_path):
     assert resp.url == ClipperCardWebSession.DASHBOARD_URL
     assert session._dashboard_resp_text == dashboard_html
     assert len(session.cards) == 8
+    assert session.cards is session.cards
 
 
 def test_login_reuses_saved_cookies_when_dashboard_loads(tmp_path):

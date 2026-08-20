@@ -107,6 +107,7 @@ class ClipperCardWebSession(httpx.Client):
         self._cookie_jar = MozillaCookieJar(str(self._cookie_jar_path))
         self.cookies = self._cookie_jar
         self._dashboard_resp_text = None
+        self._cards = None
         self._profile_info = None
         self._profile_loaded = False
         self._reused_cookies = False
@@ -291,6 +292,7 @@ class ClipperCardWebSession(httpx.Client):
 
         if not dashboard_resp.is_error and self._response_has_dashboard_data(dashboard_resp.text):
             self._dashboard_resp_text = dashboard_resp.text
+            self._cards = None
             self._reused_cookies = True
             self._save_cookie_jar()
             logger.debug("Saved cookies are still valid")
@@ -298,6 +300,7 @@ class ClipperCardWebSession(httpx.Client):
 
         logger.debug("Saved cookies did not yield a valid dashboard; falling back to login")
         self._dashboard_resp_text = None
+        self._cards = None
         self._reused_cookies = False
         self._clear_cookie_jar()
         return None
@@ -372,6 +375,7 @@ class ClipperCardWebSession(httpx.Client):
         if parsed_cards or "patronDetails" in dashboard_resp.text:
             logger.debug("Login successful, dashboard page received with %d parsed cards", len(parsed_cards))
             self._dashboard_resp_text = dashboard_resp.text
+            self._cards = None
             self._reused_cookies = False
             self._save_cookie_jar()
             return dashboard_resp
@@ -393,6 +397,7 @@ class ClipperCardWebSession(httpx.Client):
 
         logger.debug("Login response did not include patronDetails; keeping page for downstream parsing")
         self._dashboard_resp_text = dashboard_resp.text
+        self._cards = None
         return dashboard_resp
 
     @property
@@ -431,7 +436,8 @@ class ClipperCardWebSession(httpx.Client):
         """
         if not self._dashboard_resp_text:
             raise ClipperCardError("Must login first")
-        logger.debug("Parsing cards from dashboard")
-        cards = parser.parse_dashboard_cards(self._dashboard_resp_text)
-        logger.debug("Found %d cards", len(cards))
-        return cards
+        if self._cards is None:
+            logger.debug("Parsing cards from dashboard")
+            self._cards = parser.parse_dashboard_cards(self._dashboard_resp_text)
+            logger.debug("Found %d cards", len(self._cards))
+        return self._cards
