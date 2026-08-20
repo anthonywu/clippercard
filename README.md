@@ -81,7 +81,7 @@ $ clippercard summary
 +----------------------------------------------------------------+
 ```
 
-Name, email, address, phone, and card serials are redacted by default. Each stored-value purse (Cash Value, BART, or another agency) gets its own column. Cards are listed highest Cash Value first. Pass `--show-private` to print unredacted details.
+Name, email, address, phone, and card serials are redacted by default. Each stored-value purse (Cash Value, BART, or another agency) gets its own column. Cards are listed highest Cash Value first. On a terminal the table is colorized (blue header, zebra rows, green balances); piped output and `NO_COLOR` stay plain ASCII as above. Pass `--show-private` to print unredacted details.
 
 If you wish to use clippercard without specifying username/password on the CLI, create a file ``~/.config/clippercard/credentials.ini`` with this format::
 

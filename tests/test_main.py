@@ -697,6 +697,56 @@ def test_summary_defaults_to_json_when_stdout_is_piped(capsys):
     assert output.err == f"Reusing saved cookies from {expected_cookie_path}\n"
 
 
+def test_summary_enables_table_color_on_tty():
+    class DummySession:
+        reused_cookies = False
+        cookie_jar_path = Path("/tmp/auth.cookies")
+        profile_info = None
+        cards = []
+
+    with (
+        patch.object(
+            sys,
+            "argv",
+            ["clippercard", "summary", "--credential-store", "config", "--cookie-store", "file"],
+        ),
+        patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=Path("/tmp/auth.cookies")),
+        patch("clippercard.main.clippercard.Session", return_value=DummySession()),
+        patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output") as table_mock,
+        patch("clippercard.main.sys.stdout.isatty", return_value=True),
+        patch("clippercard.main.print"),
+    ):
+        main.main()
+
+    table_mock.assert_called_once_with(None, [], show_private=False, color=True)
+
+
+def test_summary_disables_table_color_when_piped():
+    class DummySession:
+        reused_cookies = False
+        cookie_jar_path = Path("/tmp/auth.cookies")
+        profile_info = None
+        cards = []
+
+    with (
+        patch.object(
+            sys,
+            "argv",
+            ["clippercard", "summary", "--output", "table", "--credential-store", "config", "--cookie-store", "file"],
+        ),
+        patch("clippercard.main._get_client_auth", return_value=(("person@example.com", "supersecret"), "config")),
+        patch("clippercard.main._cookie_jar_path_for_account", return_value=Path("/tmp/auth.cookies")),
+        patch("clippercard.main.clippercard.Session", return_value=DummySession()),
+        patch("clippercard.main.clippercard.porcelain.tabular_output", return_value="summary output") as table_mock,
+        patch("clippercard.main.sys.stdout.isatty", return_value=False),
+        patch("clippercard.main.print"),
+    ):
+        main.main()
+
+    table_mock.assert_called_once_with(None, [], show_private=False, color=False)
+
+
 def test_summary_output_table_overrides_pipe_detection(capsys):
     expected_cookie_path = Path("/tmp/auth.cookies")
 

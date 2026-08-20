@@ -334,3 +334,70 @@ def test_summary_json_output_renders_profile_and_cards_without_private_info():
             }
         ],
     }
+
+
+def test_tabular_output_emits_ansi_when_color_is_enabled(monkeypatch):
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    cards = [
+        SimpleNamespace(
+            nickname="Phone",
+            serial_number="123456788820",
+            type="Adult",
+            status="Active",
+            products=[SimpleNamespace(name="Cash Value", value="$244.55")],
+            features=[],
+        ),
+        SimpleNamespace(
+            nickname="Watch",
+            serial_number="123456788838",
+            type="Adult",
+            status="Expired",
+            products=[SimpleNamespace(name="Cash Value", value="$0.00")],
+            features=[],
+        ),
+    ]
+
+    output = tabular_output(None, cards, show_private=False, color=True)
+
+    assert "\x1b[" in output
+    assert "╭" in output
+    assert "Phone" in output
+    assert "Watch" in output
+
+
+def test_tabular_output_stays_plain_ascii_by_default():
+    cards = [
+        SimpleNamespace(
+            nickname="Phone",
+            serial_number="123456788820",
+            type="Adult",
+            status="Active",
+            products=[SimpleNamespace(name="Cash Value", value="$244.55")],
+            features=[],
+        )
+    ]
+
+    output = tabular_output(None, cards, show_private=False)
+
+    assert "\x1b[" not in output
+    assert "╭" not in output
+    assert output.startswith("+")
+
+
+def test_tabular_output_respects_no_color(monkeypatch):
+    monkeypatch.setenv("NO_COLOR", "1")
+    cards = [
+        SimpleNamespace(
+            nickname="Phone",
+            serial_number="123456788820",
+            type="Adult",
+            status="Active",
+            products=[SimpleNamespace(name="Cash Value", value="$244.55")],
+            features=[],
+        )
+    ]
+
+    output = tabular_output(None, cards, show_private=False, color=True)
+
+    assert "\x1b[" not in output
+    assert output.startswith("+")
