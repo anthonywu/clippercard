@@ -105,7 +105,9 @@ def _redact_private_info(label, value):
         case "name":
             return " ".join([part[:2] + "***" for part in value.split()])
         case "email":
-            local, domain = value.split("@")
+            local, sep, domain = value.partition("@")
+            if not sep or not local or not domain:
+                return "***"
             return local[0] + "***@" + domain
         case "mailing_address":
             return "***"
@@ -116,6 +118,8 @@ def _redact_private_info(label, value):
                 redacted = f"{groups[0] + groups[1] if groups[0] else ''}***-***-{groups[2]}"
                 return redacted
         case "serial_number":
+            if len(value) <= 4:
+                return "*" * len(value)
             return ("*" * (len(value) - 4)) + value[-4:]
     return value
 
