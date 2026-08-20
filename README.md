@@ -75,13 +75,13 @@ $ clippercard summary
 +----------------------------------------------------------------+
 | # | Name    | Serial     | Type  | Status | Cash Value | BART  |
 |---+---------+------------+-------+--------+------------+-------|
-| 1 | Primary | ******4134 | Adult | Active |     $40.00 |       |
-| 2 | Phone   | ******4156 | Adult | Active |    $244.55 | $1.10 |
-| 3 | Watch   | ******4178 | Adult | Active |    $165.40 | $1.40 |
+| 1 | Phone   | ******4156 | Adult | Active |    $244.55 | $1.10 |
+| 2 | Watch   | ******4178 | Adult | Active |    $165.40 | $1.40 |
+| 3 | Primary | ******4134 | Adult | Active |     $40.00 |       |
 +----------------------------------------------------------------+
 ```
 
-Name, email, address, phone, and card serials are redacted by default. Each stored-value purse (Cash Value, BART, or another agency) gets its own column. Pass `--show-private` to print unredacted details.
+Name, email, address, phone, and card serials are redacted by default. Each stored-value purse (Cash Value, BART, or another agency) gets its own column. Cards are listed highest Cash Value first. Pass `--show-private` to print unredacted details.
 
 If you wish to use clippercard without specifying username/password on the CLI, create a file ``~/.config/clippercard/credentials.ini`` with this format::
 

@@ -127,9 +127,9 @@ def test_tabular_output_puts_each_product_on_one_row_with_own_column():
         == """+--------------------------------------------------------------------------+
 | # | Name           | Serial       | Type  | Status | Cash Value | BART   |
 |---+----------------+--------------+-------+--------+------------+--------|
-| 1 | Bridge SF Cute | ********8846 | Adult | Active |     $40.00 |        |
-| 2 | Phone 12 Blue  | ********8820 | Adult | Active |    $244.55 |  $1.10 |
-| 3 | Phone 15       | ********8937 | Adult | Active |    $237.99 | $52.15 |
+| 1 | Phone 12 Blue  | ********8820 | Adult | Active |    $244.55 |  $1.10 |
+| 2 | Phone 15       | ********8937 | Adult | Active |    $237.99 | $52.15 |
+| 3 | Bridge SF Cute | ********8846 | Adult | Active |     $40.00 |        |
 +--------------------------------------------------------------------------+"""
     )
 
@@ -167,10 +167,90 @@ def test_tabular_output_adds_a_money_column_for_each_agency_purse():
         == """+---------------------------------------------------------------------------------+
 | # | Name          | Serial       | Type  | Status | Cash Value | BART  | Muni   |
 |---+---------------+--------------+-------+--------+------------+-------+--------|
-| 1 | Phone 12 Blue | ********8820 | Adult | Active |    $244.55 | $1.10 |        |
-| 2 | MuniTrain     | ********8929 | Adult | Active |    $299.60 |       | $12.00 |
+| 1 | MuniTrain     | ********8929 | Adult | Active |    $299.60 |       | $12.00 |
+| 2 | Phone 12 Blue | ********8820 | Adult | Active |    $244.55 | $1.10 |        |
 +---------------------------------------------------------------------------------+"""
     )
+
+
+def test_tabular_output_sorts_cards_by_cash_value_descending():
+    def card(nickname, serial, cash, bart=None):
+        products = [SimpleNamespace(name="Cash Value", value=cash)]
+        if bart is not None:
+            products.append(SimpleNamespace(name="BART", value=bart))
+        return SimpleNamespace(
+            nickname=nickname,
+            serial_number=serial,
+            type="Adult",
+            status="Active",
+            products=products,
+            features=[],
+        )
+
+    cards = [
+        card("Bridge SF Cute", "123456788846", "$40.00"),
+        card("Phone 12 Blue", "123456788820", "$244.55", "$1.10"),
+        card("Watch 9", "123456788838", "$165.40", "$1.40"),
+        card("Ubuntu", "123456788887", "$295.00", "$1.90"),
+        card("MuniTrain", "123456788929", "$299.60"),
+        card("Phone 15", "123456788937", "$237.99", "$52.15"),
+        card("Watch 6 Red", "123456788945", "$163.10"),
+        card("Watch 5 Ti", "123456788952", "$294.75"),
+    ]
+
+    output = tabular_output(None, cards, show_private=False)
+    names = [line.split("|")[2].strip() for line in output.splitlines() if line.startswith("| ") and "Name" not in line]
+    assert names == [
+        "MuniTrain",
+        "Ubuntu",
+        "Watch 5 Ti",
+        "Phone 12 Blue",
+        "Phone 15",
+        "Watch 9",
+        "Watch 6 Red",
+        "Bridge SF Cute",
+    ]
+
+
+def test_tabular_output_keeps_missing_cash_last_and_preserves_ties():
+    cards = [
+        SimpleNamespace(
+            nickname="Low",
+            serial_number="1",
+            type="Adult",
+            status="Active",
+            products=[SimpleNamespace(name="Cash Value", value="$10.00")],
+            features=[],
+        ),
+        SimpleNamespace(
+            nickname="Tied First",
+            serial_number="2",
+            type="Adult",
+            status="Active",
+            products=[SimpleNamespace(name="Cash Value", value="$50.00")],
+            features=[],
+        ),
+        SimpleNamespace(
+            nickname="No Cash",
+            serial_number="3",
+            type="Adult",
+            status="Active",
+            products=[SimpleNamespace(name="Pass", value="Muni Monthly")],
+            features=[],
+        ),
+        SimpleNamespace(
+            nickname="Tied Second",
+            serial_number="4",
+            type="Adult",
+            status="Active",
+            products=[SimpleNamespace(name="Cash Value", value="$50.00")],
+            features=[],
+        ),
+    ]
+
+    output = tabular_output(None, cards, show_private=False)
+    names = [line.split("|")[2].strip() for line in output.splitlines() if line.startswith("| ") and "Name" not in line]
+    assert names == ["Tied First", "Tied Second", "Low", "No Cash"]
 
 
 def test_tabular_output_flattens_multiline_pass_values():
@@ -193,6 +273,30 @@ def test_tabular_output_flattens_multiline_pass_values():
     assert "\n  - Expires" not in output
     assert "Muni Monthly - Expires 2026-09-01" in output
     assert output.count("\n") == 4
+
+
+def test_summary_json_output_keeps_dashboard_card_order():
+    cards = [
+        SimpleNamespace(
+            nickname="Low",
+            serial_number="1",
+            type="Adult",
+            status="Active",
+            products=[SimpleNamespace(name="Cash Value", value="$10.00")],
+            features=[],
+        ),
+        SimpleNamespace(
+            nickname="High",
+            serial_number="2",
+            type="Adult",
+            status="Active",
+            products=[SimpleNamespace(name="Cash Value", value="$90.00")],
+            features=[],
+        ),
+    ]
+
+    output = json.loads(summary_json_output(None, cards, show_private=False))
+    assert [card["nickname"] for card in output["cards"]] == ["Low", "High"]
 
 
 def test_summary_json_output_renders_profile_and_cards_without_private_info():

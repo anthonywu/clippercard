@@ -105,6 +105,24 @@ def _is_money_value(value):
     return bool(value) and _MONEY_VALUE.fullmatch(value) is not None
 
 
+def _money_cents(value):
+    if not _is_money_value(value):
+        return None
+    dollars, cents = value[1:].split(".")
+    return int(dollars) * 100 + int(cents)
+
+
+def _sorted_cards_by_cash_value(cards):
+    def sort_key(item):
+        index, card = item
+        cents = _money_cents(_values_by_column(card).get(_CASH_COLUMN, ""))
+        if cents is None:
+            return (1, 0, index)
+        return (0, -cents, index)
+
+    return [card for _, card in sorted(enumerate(cards), key=sort_key)]
+
+
 def _column_names_for_cards(cards):
     product_names = []
     feature_names = []
@@ -185,9 +203,7 @@ def summary_json_output(user_profile, cards, show_private=False):
 
 
 def tabular_output(user_profile, cards, show_private=False):
-    """
-    Pretty prints a user profile and its associated cards and products.
-    """
+    """Pretty-print a profile and cards. Cards are highest Cash Value first."""
     output_parts = []
 
     if user_profile:
@@ -204,6 +220,7 @@ def tabular_output(user_profile, cards, show_private=False):
             output_parts.append(_render_table(profile_table))
 
     if cards:
+        cards = _sorted_cards_by_cash_value(cards)
         columns = _column_names_for_cards(cards)
         card_table = Table(box=box.ASCII)
         card_table.add_column("#", justify="right", no_wrap=True)
