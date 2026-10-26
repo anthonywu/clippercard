@@ -63,7 +63,7 @@ wheels = [
 
 [[package]]
 name = "clippercard"
-version = "202608.20.1"
+version = "202610.25.1"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
